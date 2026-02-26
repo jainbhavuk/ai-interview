@@ -1,0 +1,191 @@
+.card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid #334155;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 520px;
+  margin: 0 auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+}
+
+.form {
+  display: grid;
+  gap: 20px;
+}
+
+.rowGroup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.row {
+  display: grid;
+  gap: 6px;
+}
+
+.row label {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  text-align: left;
+}
+
+.row input,
+.row select,
+.row textarea {
+  background: #020617;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  color: #f1f5f9;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  resize: vertical;
+  width: 100%;
+  min-height: 44px;
+}
+
+.row select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.row input:focus,
+.row select:focus,
+.row textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.row input::placeholder {
+  color: #64748b;
+}
+
+.fileInput {
+  cursor: pointer;
+}
+
+.fileInput::-webkit-file-upload-button {
+  visibility: hidden;
+}
+
+.fileInput::before {
+  content: 'Choose Resume File';
+  display: inline-block;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 8px 16px;
+  outline: none;
+  white-space: nowrap;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.fileInput:hover::before {
+  background: #334155;
+  border-color: #64748b;
+}
+
+.fileInput:active::before {
+  background: #475569;
+}
+
+.filePreview {
+  margin-top: 8px;
+  padding: 12px 16px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  color: #22c55e;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.error {
+  margin: 0;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.primaryButton {
+  width: 100%;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.025em;
+  margin-top: 8px;
+  min-height: 48px;
+  touch-action: manipulation;
+}
+
+.primaryButton:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+}
+
+.primaryButton:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 24px;
+    margin: 16px;
+    border-radius: 16px;
+  }
+  
+  .rowGroup {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .row input,
+  .row select,
+  .row textarea {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+  
+  .primaryButton {
+    padding: 14px 20px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 20px;
+    margin: 12px;
+  }
+  
+  .form {
+    gap: 20px;
+  }
+  
+  .row {
+    gap: 6px;
+  }
+}

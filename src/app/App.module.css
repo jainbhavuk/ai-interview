@@ -1,0 +1,190 @@
+.fullScreen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #020617 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.heroSection {
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+.heroTitle {
+  font-size: 4rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  animation: glow 3s ease-in-out infinite alternate;
+  line-height: 1.1;
+}
+
+@keyframes glow {
+  from {
+    filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+  }
+  to {
+    filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.5));
+  }
+}
+
+.heroSubtitle {
+  font-size: 1.2rem;
+  color: #94a3b8;
+  margin-bottom: 48px;
+  letter-spacing: 0.025em;
+  font-weight: 300;
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  
+  .heroSubtitle {
+    font-size: 1rem;
+    margin-bottom: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroTitle {
+    font-size: 2rem;
+  }
+  
+  .heroSubtitle {
+    font-size: 0.9rem;
+  }
+}
+
+.shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.shellInterview {
+  max-width: 100%;
+  padding: 14px 18px 18px;
+  min-height: 100vh;
+  background: #020617;
+  border-radius: 14px;
+}
+
+.skipLink {
+  position: absolute;
+  top: -48px;
+  left: 12px;
+  background: #111827;
+  color: #ffffff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.skipLink:focus {
+  top: 12px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.headerInterview {
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.header h1 {
+  margin: 0 0 8px;
+  font-size: 1.8rem;
+  line-height: 1.2;
+}
+
+.header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.main {
+  min-height: 70vh;
+}
+
+.mainInterview {
+  min-height: calc(100vh - 90px);
+}
+
+.interviewTitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #e5e7eb;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.secondaryButton {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  min-height: 44px;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.secondaryButton:hover {
+  background: #f3f4f6;
+}
+
+.headerInterview .secondaryButton {
+  border-color: #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.headerInterview .secondaryButton:hover {
+  background: #1e293b;
+}
+
+@media (max-width: 800px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .secondaryButton {
+    align-self: center;
+    width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.3rem;
+  }
+  
+  .header p {
+    font-size: 0.9rem;
+  }
+}
