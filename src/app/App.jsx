@@ -1,58 +1,70 @@
-import { useState } from 'react'
-import { InterviewSession } from '../components/interview/InterviewSession'
-import { InterviewReport } from '../components/report/InterviewReport'
-import { SetupForm } from '../components/setup/SetupForm'
-import styles from './App.module.css'
+import { useState } from "react";
+import { InterviewSession } from "../components/interview/InterviewSession";
+import { InterviewReport } from "../components/report/InterviewReport";
+import { SetupForm } from "../components/setup/SetupForm";
+import styles from "./App.module.css";
 
 export default function App() {
-  const [stage, setStage] = useState('setup')
-  const [setupConfig, setSetupConfig] = useState(null)
-  const [report, setReport] = useState(null)
+  const [stage, setStage] = useState("setup");
+  const [setupConfig, setSetupConfig] = useState(null);
+  const [report, setReport] = useState(null);
 
   function handleStartInterview(config) {
-    setSetupConfig(config)
-    setReport(null)
-    setStage('interview')
+    setSetupConfig(config);
+    setReport(null);
+    setStage("interview");
   }
 
   function handleInterviewComplete(nextReport) {
-    setReport(nextReport)
-    setStage('report')
+    setReport(nextReport);
+    setStage("report");
   }
 
   function handleStartOver() {
-    setSetupConfig(null)
-    setReport(null)
-    setStage('setup')
+    setSetupConfig(null);
+    setReport(null);
+    setStage("setup");
   }
 
-  if (stage === 'setup') {
+  if (stage === "setup") {
     return (
       <div className={styles.fullScreen}>
         <div className={styles.heroSection}>
-          <h1 className={styles.heroTitle}>NEXUS AI</h1>
-          <p className={styles.heroSubtitle}>Advanced Interview Intelligence System</p>
+          <h1 className={styles.heroTitle}>Knoq</h1>
+          <p className={styles.heroSubtitle}>
+            Advanced Interview Intelligence System
+          </p>
           <SetupForm onStartInterview={handleStartInterview} />
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className={`${styles.shell} ${stage === 'interview' ? styles.shellInterview : ''}`}>
+    <div
+      className={`${styles.shell} ${stage === "interview" ? styles.shellInterview : ""}`}
+    >
       <a href="#main-content" className={styles.skipLink}>
         Skip to main content
       </a>
-      <header className={`${styles.header} ${stage === 'interview' ? styles.headerInterview : ''}`}>
-        {stage !== 'interview' && (
+      <header
+        className={`${styles.header} ${stage === "interview" ? styles.headerInterview : ""}`}
+      >
+        {stage !== "interview" && (
           <div>
-            <h1>Nexus AI</h1>
+            <h1>Knoq</h1>
             <p>Tailored mock interviews for better prep!</p>
           </div>
         )}
-        {stage === 'interview' && <h1 className={styles.interviewTitle}>Live Interview Room</h1>}
-        {stage !== 'setup' && (
-          <button type="button" className={styles.secondaryButton} onClick={handleStartOver}>
+        {stage === "interview" && (
+          <h1 className={styles.interviewTitle}>Knoq Interview Session</h1>
+        )}
+        {stage !== "setup" && (
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={handleStartOver}
+          >
             Start New Session
           </button>
         )}
@@ -60,10 +72,10 @@ export default function App() {
 
       <main
         id="main-content"
-        className={`${styles.main} ${stage === 'interview' ? styles.mainInterview : ''}`}
+        className={`${styles.main} ${stage === "interview" ? styles.mainInterview : ""}`}
         tabIndex="-1"
       >
-        {stage === 'interview' && setupConfig && (
+        {stage === "interview" && setupConfig && (
           <InterviewSession
             config={setupConfig}
             onComplete={handleInterviewComplete}
@@ -71,8 +83,10 @@ export default function App() {
           />
         )}
 
-        {stage === 'report' && report && <InterviewReport report={report} onStartOver={handleStartOver} />}
+        {stage === "report" && report && (
+          <InterviewReport report={report} onStartOver={handleStartOver} />
+        )}
       </main>
     </div>
-  )
+  );
 }

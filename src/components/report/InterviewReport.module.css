@@ -3,8 +3,12 @@
   border: 1px solid #334155;
   border-radius: 20px;
   padding: 32px;
-  margin: 0 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  margin: 0;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .header {
@@ -72,16 +76,22 @@
   margin: 0;
   padding-left: 18px;
   color: #e2e8f0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .panel li {
   margin-bottom: 6px;
   color: #e2e8f0;
+  line-height: 1.4;
 }
 
 .panel p {
   margin: 0 0 8px;
   color: #e2e8f0;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .panel strong {
@@ -110,10 +120,10 @@
 
 @media (max-width: 860px) {
   .card {
-    margin: 0 12px;
+    margin: 0;
     padding: 24px;
   }
-  
+
   .grid {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -124,7 +134,7 @@
     align-items: stretch;
     text-align: center;
   }
-  
+
   .scoreBadge {
     text-align: center;
     align-self: center;
@@ -133,41 +143,41 @@
 
 @media (max-width: 480px) {
   .card {
-    margin: 0 8px;
+    margin: 0;
     padding: 20px;
     border-radius: 16px;
   }
-  
+
   .panel {
     padding: 12px;
     border-radius: 8px;
   }
-  
+
   .panel h3 {
     font-size: 0.9rem;
   }
-  
+
   .panel li {
     font-size: 0.85rem;
     margin-bottom: 4px;
   }
-  
+
   .panel p {
     font-size: 0.85rem;
   }
-  
+
   .scoreBadge {
     padding: 10px 14px;
   }
-  
+
   .scoreBadge strong {
     font-size: 1rem;
   }
-  
+
   .scoreBadge span {
     font-size: 0.75rem;
   }
-  
+
   .primaryButton {
     padding: 12px 20px;
     font-size: 0.9rem;

@@ -2,7 +2,7 @@ import {
   NICE_TO_HAVE_MARKERS,
   REQUIRED_MARKERS,
   SKILL_KEYWORDS,
-} from '../constants/interview'
+} from "../constants/interview";
 
 /**
  * Normalizes free-form text for simple rule-based parsing.
@@ -10,29 +10,29 @@ import {
  * @returns {string}
  */
 export function normalizeText(value) {
-  return String(value || '')
+  return String(value || "")
     .toLowerCase()
-    .replace(/\r/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+    .replace(/\r/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function toUniqueList(values) {
-  return [...new Set(values.filter(Boolean))]
+  return [...new Set(values.filter(Boolean))];
 }
 
 function splitLines(rawText) {
-  return String(rawText || '')
-    .split('\n')
+  return String(rawText || "")
+    .split("\n")
     .map((line) => line.trim())
-    .filter(Boolean)
+    .filter(Boolean);
 }
 
 function splitSentences(rawText) {
-  return String(rawText || '')
+  return String(rawText || "")
     .split(/[.!?\n]/)
     .map((sentence) => sentence.trim())
-    .filter(Boolean)
+    .filter(Boolean);
 }
 
 /**
@@ -41,12 +41,15 @@ function splitSentences(rawText) {
  * @returns {string[]}
  */
 export function extractSkills(rawText) {
-  const text = normalizeText(rawText)
+  const text = normalizeText(rawText);
 
   return SKILL_KEYWORDS.filter((skill) => {
-    const pattern = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
-    return pattern.test(text)
-  })
+    const pattern = new RegExp(
+      `\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+      "i",
+    );
+    return pattern.test(text);
+  });
 }
 
 /**
@@ -55,14 +58,14 @@ export function extractSkills(rawText) {
  * @returns {number}
  */
 export function extractYearsOfExperience(rawText) {
-  const text = normalizeText(rawText)
-  const directMatch = text.match(/(\d{1,2})\+?\s*(years|yrs)/i)
+  const text = normalizeText(rawText);
+  const directMatch = text.match(/(\d{1,2})\+?\s*(years|yrs)/i);
 
   if (!directMatch) {
-    return 0
+    return 0;
   }
 
-  return Number(directMatch[1]) || 0
+  return Number(directMatch[1]) || 0;
 }
 
 /**
@@ -71,35 +74,42 @@ export function extractYearsOfExperience(rawText) {
  * @returns {string[]}
  */
 export function extractProjects(rawText) {
-  const lines = splitLines(rawText)
-  const projectMarkers = ['project', 'built', 'developed', 'implemented', 'launched']
+  const lines = splitLines(rawText);
+  const projectMarkers = [
+    "project",
+    "built",
+    "developed",
+    "implemented",
+    "launched",
+  ];
 
   const projectLines = lines.filter((line) =>
     projectMarkers.some((marker) => line.toLowerCase().includes(marker)),
-  )
+  );
 
-  return toUniqueList(projectLines).slice(0, 5)
+  return toUniqueList(projectLines).slice(0, 5);
 }
 
 function classifyJdSkill(sentence, skill) {
-  const normalized = normalizeText(sentence)
-  const hasSkill = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(
-    normalized,
-  )
+  const normalized = normalizeText(sentence);
+  const hasSkill = new RegExp(
+    `\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+    "i",
+  ).test(normalized);
 
   if (!hasSkill) {
-    return null
+    return null;
   }
 
   if (REQUIRED_MARKERS.some((marker) => normalized.includes(marker))) {
-    return 'required'
+    return "required";
   }
 
   if (NICE_TO_HAVE_MARKERS.some((marker) => normalized.includes(marker))) {
-    return 'niceToHave'
+    return "niceToHave";
   }
 
-  return 'neutral'
+  return "neutral";
 }
 
 /**
@@ -112,7 +122,7 @@ export function parseResume(rawText) {
     skills: extractSkills(rawText),
     yearsExperience: extractYearsOfExperience(rawText),
     projects: extractProjects(rawText),
-  }
+  };
 }
 
 /**
@@ -121,29 +131,31 @@ export function parseResume(rawText) {
  * @returns {{requiredSkills: string[], niceToHaveSkills: string[], responsibilities: string[]}}
  */
 export function parseJobDescription(rawText) {
-  const sentences = splitSentences(rawText)
-  const requiredSkills = []
-  const niceToHaveSkills = []
+  const sentences = splitSentences(rawText);
+  const requiredSkills = [];
+  const niceToHaveSkills = [];
 
   sentences.forEach((sentence) => {
     SKILL_KEYWORDS.forEach((skill) => {
-      const category = classifyJdSkill(sentence, skill)
+      const category = classifyJdSkill(sentence, skill);
 
-      if (category === 'required') {
-        requiredSkills.push(skill)
-      } else if (category === 'niceToHave') {
-        niceToHaveSkills.push(skill)
+      if (category === "required") {
+        requiredSkills.push(skill);
+      } else if (category === "niceToHave") {
+        niceToHaveSkills.push(skill);
       }
-    })
-  })
+    });
+  });
 
   const responsibilities = sentences
-    .filter((sentence) => /build|design|deliver|own|improve|lead|collaborate/i.test(sentence))
-    .slice(0, 6)
+    .filter((sentence) =>
+      /build|design|deliver|own|improve|lead|collaborate/i.test(sentence),
+    )
+    .slice(0, 6);
 
   return {
     requiredSkills: toUniqueList(requiredSkills),
     niceToHaveSkills: toUniqueList(niceToHaveSkills),
     responsibilities: toUniqueList(responsibilities),
-  }
+  };
 }

@@ -1,13 +1,13 @@
-const SESSION_KEY = 'ai_interviewer_session_snapshot'
-const REPORT_KEY = 'ai_interviewer_latest_report'
+const SESSION_KEY = "ai_interviewer_session_snapshot";
+const REPORT_KEY = "ai_interviewer_latest_report";
 
 function schedulePersist(task) {
-  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-    window.requestIdleCallback(() => task())
-    return
+  if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+    window.requestIdleCallback(() => task());
+    return;
   }
 
-  setTimeout(task, 0)
+  setTimeout(task, 0);
 }
 
 /**
@@ -15,7 +15,9 @@ function schedulePersist(task) {
  * @param {object} snapshot
  */
 export function saveSessionSnapshot(snapshot) {
-  schedulePersist(() => localStorage.setItem(SESSION_KEY, JSON.stringify(snapshot)))
+  schedulePersist(() =>
+    localStorage.setItem(SESSION_KEY, JSON.stringify(snapshot)),
+  );
 }
 
 /**
@@ -23,12 +25,14 @@ export function saveSessionSnapshot(snapshot) {
  * @param {object} report
  */
 export function saveLatestReport(report) {
-  schedulePersist(() => localStorage.setItem(REPORT_KEY, JSON.stringify(report)))
+  schedulePersist(() =>
+    localStorage.setItem(REPORT_KEY, JSON.stringify(report)),
+  );
 }
 
 /**
  * Clears in-progress state after completion.
  */
 export function clearSessionSnapshot() {
-  localStorage.removeItem(SESSION_KEY)
+  localStorage.removeItem(SESSION_KEY);
 }

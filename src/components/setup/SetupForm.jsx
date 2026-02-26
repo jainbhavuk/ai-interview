@@ -1,50 +1,57 @@
-import { useState } from 'react'
-import { readTextFile } from '../../services/fileService'
-import styles from './SetupForm.module.css'
+import { useState } from "react";
+import { readTextFile } from "../../services/fileService";
+import styles from "./SetupForm.module.css";
 
-const DOMAINS = ['Frontend', 'Backend', 'Fullstack', 'DevOps', 'QA', 'SRE']
-const YOE_OPTIONS = ['Fresher', '1 year', '2 years', '3 years', '5 years', '10+ years']
+const DOMAINS = ["Frontend", "Backend", "Fullstack", "DevOps", "QA", "SRE"];
+const YOE_OPTIONS = [
+  "Fresher",
+  "1 year",
+  "2 years",
+  "3 years",
+  "5 years",
+  "10+ years",
+];
 
 export function SetupForm({ onStartInterview }) {
-  const [candidateName, setCandidateName] = useState('')
-  const [durationMinutes, setDurationMinutes] = useState(20)
-  const [resumeText, setResumeText] = useState('')
-  const [jdText, setJdText] = useState('')
-  const [domain, setDomain] = useState('Frontend')
-  const [yoe, setYoe] = useState('1 year')
-  const [error, setError] = useState('')
+  const [candidateName, setCandidateName] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(20);
+  const [resumeText, setResumeText] = useState("");
+  const [jdText, setJdText] = useState("");
+  const [domain, setDomain] = useState("Frontend");
+  const [yoe, setYoe] = useState("1 year");
+  const [error, setError] = useState("");
 
   async function handleFileUpload(event, target) {
-    const file = event.target.files?.[0]
-    if (!file) return
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     try {
-      const { text } = await readTextFile(file)
-      if (target === 'resume') {
-        setResumeText(text)
-      } else if (target === 'jd') {
-        setJdText(text)
+      const { text } = await readTextFile(file);
+      if (target === "resume") {
+        setResumeText(text);
+      } else if (target === "jd") {
+        setJdText(text);
       }
-      setError('')
+      setError("");
     } catch (uploadError) {
-      setError(uploadError.message)
+      setError(uploadError.message);
     }
   }
 
   function handleSubmit(event) {
-    event.preventDefault()
+    event.preventDefault();
 
     if (!candidateName.trim()) {
-      setError('Candidate name is required.')
-      return
+      setError("Candidate name is required.");
+      return;
     }
 
     if (!jdText.trim()) {
-      setError('Job Description is required.')
-      return
+      setError("Job Description is required.");
+      return;
     }
 
-    setError('')
+    setError("");
     onStartInterview({
       candidateName: candidateName.trim(),
       durationMinutes: Number(durationMinutes),
@@ -52,7 +59,7 @@ export function SetupForm({ onStartInterview }) {
       jdText,
       domain,
       yoe,
-    })
+    });
   }
 
   return (
@@ -78,8 +85,10 @@ export function SetupForm({ onStartInterview }) {
               value={domain}
               onChange={(event) => setDomain(event.target.value)}
             >
-              {DOMAINS.map(d => (
-                <option key={d} value={d}>{d}</option>
+              {DOMAINS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
               ))}
             </select>
           </div>
@@ -91,8 +100,10 @@ export function SetupForm({ onStartInterview }) {
               value={yoe}
               onChange={(event) => setYoe(event.target.value)}
             >
-              {YOE_OPTIONS.map(year => (
-                <option key={year} value={year}>{year}</option>
+              {YOE_OPTIONS.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
               ))}
             </select>
           </div>
@@ -124,31 +135,35 @@ export function SetupForm({ onStartInterview }) {
         </div>
 
         <div className={styles.row}>
-          <label htmlFor="resumeFile">Resume (Optional)</label>
-          <input
-            id="resumeFile"
-            type="file"
-            accept=".txt,.md,.json,.csv,.log,text/plain,.pdf,.doc,.docx"
-            onChange={(event) => handleFileUpload(event, 'resume')}
-            className={styles.fileInput}
-          />
+          <label htmlFor="resumeFile">Resume (PDF only, max 1MB)</label>
+          <div className={styles.fileWrapper}>
+            <input
+              id="resumeFile"
+              type="file"
+              accept=".pdf"
+              onChange={(event) => handleFileUpload(event, "resume")}
+              className={styles.fileInput}
+            />
+            <label htmlFor="resumeFile" className={styles.fileButton}>
+              Choose Resume File
+            </label>
+            <span className={styles.fileName}>
+              {resumeText ? "File uploaded ✓" : "No file chosen"}
+            </span>
+          </div>
           {resumeText && (
             <div className={styles.filePreview}>
-              Resume uploaded ✓
+              Resume uploaded ✓ ({resumeText.length} characters)
             </div>
           )}
         </div>
 
-        {error && (
-          <div className={styles.error}>
-            {error}
-          </div>
-        )}
+        {error && <div className={styles.error}>{error}</div>}
 
         <button type="submit" className={styles.primaryButton}>
           Start Interview
         </button>
       </form>
     </section>
-  )
+  );
 }
