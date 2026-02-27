@@ -81,6 +81,7 @@
   border-radius: 12px;
   padding: 12px 16px;
   min-height: 44px;
+  min-width: 0;
 }
 
 .fileInput {
@@ -176,5 +177,21 @@
   .rowGroup {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fileWrapper {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .fileButton {
+    width: 100%;
+    text-align: center;
+  }
+
+  .fileName {
+    width: 100%;
   }
 }
