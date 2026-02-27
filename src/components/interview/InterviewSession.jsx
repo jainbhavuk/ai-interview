@@ -243,11 +243,9 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       }
 
       if (response?.intent === "clarify" || response?.intent === "repeat") {
-        setStatusMessage("Sure — let me clarify.");
+        setStatusMessage("Sure — let me repeat that for you.");
         speakLine(
-          response?.response ||
-            interview?.currentQuestion?.prompt ||
-            "Let me repeat the question.",
+          interview?.currentQuestion?.prompt || "Let me repeat the question.",
           "listen",
         );
         return;

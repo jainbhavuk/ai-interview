@@ -102,7 +102,10 @@
   white-space: nowrap;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  text-align: center;
+  text-align: center !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .fileButton:hover {
@@ -186,9 +189,11 @@
   }
 
   .fileButton {
-    display: block;
+    display: block !important;
     width: 100%;
-    text-align: center;
+    text-align: center !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
 
   .fileName {

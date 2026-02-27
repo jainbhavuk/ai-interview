@@ -209,12 +209,28 @@ Return JSON with keys:
 - feedback (array of short strings)
 - needsFollowUp (boolean)
 - followUpQuestion (string, optional)
+- needsElaboration (boolean, optional)
+
+Rules for scoring:
+- 1: No answer, completely irrelevant, or single words like "great", "alright", "ok"
+- 2: Very short answer (<10 words) or vague without technical details
+- 3: Adequate answer with some details but lacks depth
+- 4: Good answer with solid technical details and examples
+- 5: Excellent answer with comprehensive details, examples, and insights
+
+Rules for needsElaboration:
+- Set to true if answer is too short (<15 words) for a technical question
+- Set to true if answer is vague (e.g., "great", "alright", "ok", "fine", "good")
+- Set to true if answer lacks expected technical depth
+- Set to true if answer doesn't address the core of the question
 
 Rules for followUpQuestion:
-- Only ask a follow-up if it's truly needed (missing critical technical detail).
-- The follow-up MUST be specific to the question/answer content (mention a concrete technology, decision, trade-off, metric, constraint, or step).
-- Do NOT ask generic questions like "How do you overcome challenges/hurdles?" or "How did you tackle difficulties?".
-- Keep it one sentence.`,
+- Only ask if needsElaboration is false and follow-up is truly needed for missing critical technical detail
+- The follow-up MUST be specific to the question/answer content
+- Do NOT ask generic questions like "How do you overcome challenges?"
+- Keep it one sentence.
+
+If needsElaboration is true, provide followUpQuestion asking for more details.`,
   );
 
   const context =
@@ -231,7 +247,7 @@ Rules for followUpQuestion:
 A:${answer || "N/A"}
 C:${context}
 
-{"score":3,"feedback":["Good answer"],"needsFollowUp":false}`,
+{"score":3,"feedback":["Good answer"],"needsFollowUp":false,"needsElaboration":false}`,
   );
 
   try {
@@ -245,6 +261,15 @@ C:${context}
     const followUp = String(parsed?.followUpQuestion || "").trim();
     const genericFollowUpPattern =
       /(overcome|tackle|handle)\s+(hurdles|challenges|difficulties)|how\s+did\s+you\s+(overcome|tackle|handle)/i;
+
+    // Handle elaboration requests
+    if (parsed?.needsElaboration && followUp) {
+      return {
+        ...parsed,
+        needsFollowUp: true,
+        followUpQuestion: followUp,
+      };
+    }
 
     if (parsed?.needsFollowUp && followUp && genericFollowUpPattern.test(followUp)) {
       return {
@@ -282,12 +307,38 @@ export async function handleUserResponse(
     - "empty": No meaningful response
     
     Provide appropriate, empathetic responses for each intent. Use natural, human-like language:
-    - For encouragement: "Great example!", "That's exactly what I'm looking for", "I appreciate your honesty"
-    - For empathy: "That sounds challenging", "Take your time, no rush", "I can see how that would be tough"
-    - For curiosity: "Really? Tell me more about that", "Wow, I didn't expect that!", "That's fascinating"
-    - For agreement: "I totally get that, same here", "That makes complete sense"
-    - For appreciation: "Thanks for sharing that", "That gives me great insight"
-    - For nervousness: "No pressure, think it through", "It's okay to take your time"`,
+    
+    For detailed, satisfactory answers:
+    - "That's exactly the kind of detail I was looking for - great explanation!"
+    - "I can see you have solid experience with this based on your detailed response"
+    - "Excellent breakdown! You clearly understand the nuances here"
+    - "That gives me great insight into your problem-solving approach"
+    - "Perfect! You've covered the key technical aspects really well"
+    
+    For encouragement:
+    - "Great example! Thanks for sharing that specific experience"
+    - "That's exactly what I'm looking for - keep going with those details"
+    - "I appreciate your honesty in explaining the challenges"
+    - "That's a really thoughtful approach to the problem"
+    
+    For empathy:
+    - "That sounds challenging - I can see how that would be difficult to handle"
+    - "Take your time, no rush - these questions require careful thought"
+    - "I understand that's a complex topic - feel free to work through it step by step"
+    - "That makes sense - it's normal to face situations like that"
+    
+    For curiosity:
+    - "Really? Tell me more about how you approached that specific situation"
+    - "Wow, I didn't expect that outcome - what did you learn from it?"
+    - "That's fascinating - how did you decide on that particular solution?"
+    - "Interesting! What was the most challenging part of that experience?"
+    
+    For nervousness:
+    - "No pressure at all - take all the time you need to think through this"
+    - "It's completely okay to take your time - I'm here to help you succeed"
+    - "Don't worry about getting it perfect - I want to understand your thought process"
+    
+    Avoid generic responses like "Great", "Alright", "OK", "Good" as standalone answers. Always provide context-specific feedback.`,
   );
 
   const getExperienceGuidance = (yoe) => {
@@ -344,8 +395,41 @@ or {"intent":"thinking","response":"No pressure, think it through. I'm here when
 }
 
 export async function generateFinalReport(transcript, config) {
+  // Calculate fallback score from transcript if AI fails
+  const calculateFallbackScore = (transcript) => {
+    if (!transcript || transcript.length === 0) return 2.5;
+    
+    const scores = transcript
+      .map(t => t?.evaluation?.score)
+      .filter(s => s && typeof s === 'number');
+    
+    if (scores.length === 0) return 2.5;
+    
+    return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+  };
+
   const system = new SystemMessage(
-    `JSON only. Generate interview evaluation report.`,
+    `JSON only. Generate interview evaluation report based on actual performance.
+
+Calculate overallScore by averaging all individual question scores from the transcript.
+If no scores are available in transcript, analyze answer quality and assign appropriate score.
+
+Return JSON with:
+- overallScore (1-5, calculated from actual performance)
+- strengths (array of specific strengths demonstrated)
+- improvements (array of specific areas to improve)
+- competencyScores (object with competency names and scores)
+- recommendation (hire/consider/reject based on performance)
+- summary (brief performance summary)
+
+Scoring guidelines:
+- 4.5-5: Excellent performance, hire
+- 3.5-4.4: Good performance, consider hiring  
+- 2.5-3.4: Average performance, consider with reservations
+- 1.5-2.4: Below average, reject
+- 1-1.4: Poor performance, reject
+
+Base evaluation on actual answers provided, not generic responses.`,
   );
 
   const conversation =
@@ -360,7 +444,7 @@ export async function generateFinalReport(transcript, config) {
     `${config?.candidateName || "Candidate"} ${config?.domain || "software"} ${config?.yoe || "unknown"}
 ${conversation}
 
-{"overallScore":3,"strengths":[],"improvements":[],"competencyScores":{},"recommendation":"consider","summary":"Interview completed"}`,
+Generate performance-based evaluation.`,
   );
 
   try {
@@ -393,7 +477,7 @@ ${conversation}
     return {
       ...parsed,
       overallScore:
-        parsed?.overallScore ?? parsed?.interviewEvaluation?.overallScore ?? 3,
+        parsed?.overallScore ?? parsed?.interviewEvaluation?.overallScore ?? calculateFallbackScore(transcript),
       strengths: normalizedStrengths.length
         ? normalizedStrengths
         : ["Completed the interview"],
@@ -404,8 +488,10 @@ ${conversation}
     };
   } catch (error) {
     console.error("Report generation error:", error);
+    // Calculate fallback score even in error case
+    const fallbackScore = calculateFallbackScore(transcript);
     return {
-      overallScore: 3,
+      overallScore: fallbackScore,
       strengths: ["Completed interview"],
       improvements: ["Continue practicing"],
       competencyScores: {},
