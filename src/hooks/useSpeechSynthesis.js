@@ -153,20 +153,14 @@ export function useSpeechSynthesis() {
     cancel();
     setError("");
 
-    // Add natural pauses and human-like speech patterns
-    const processedText = addHumanLikePauses(cleanText);
-    
-    const utterance = new SpeechSynthesisUtterance(processedText);
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.voice = options.voice || preferredVoice || null;
     utterance.lang = options.lang || utterance.voice?.lang || "en-US";
     
-    // Vary speech parameters for more natural delivery
-    utterance.rate = options.rate || getRandomInRange(0.85, 1.0);
-    utterance.pitch = options.pitch || getRandomInRange(0.8, 1.1);
+    // Natural speech parameters without artificial pauses
+    utterance.rate = options.rate || getRandomInRange(0.9, 1.1);
+    utterance.pitch = options.pitch || getRandomInRange(0.85, 1.05);
     utterance.volume = options.volume || 1;
-    
-    // Add pauses between sentences
-    utterance.pauseDuration = 200; // 200ms pause between sentences
 
     utterance.onstart = () => {
       setIsSpeaking(true);
@@ -188,21 +182,6 @@ export function useSpeechSynthesis() {
     utteranceRef.current = utterance;
     window?.speechSynthesis?.speak(utterance);
     return true;
-  }
-
-  // Add human-like pauses and emphasis
-  function addHumanLikePauses(text) {
-    return text
-      // Add pauses after commas
-      .replace(/,/g, ',...')
-      // Add longer pauses after periods
-      .replace(/\.\s+/g, '.... ')
-      // Add pauses before important words
-      .replace(/\b(important|crucial|key|critical|significant)\b/gi, '...$1')
-      // Add emphasis for questions
-      .replace(/\?$/, '?...')
-      // Add natural thinking pauses
-      .replace(/\b(when|where|how|what|why|describe|explain)\b/gi, '$1...');
   }
 
   // Generate random number in range for voice variation

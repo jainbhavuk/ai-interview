@@ -57,7 +57,9 @@ export function useSpeechRecognition() {
         const transcript = result[0]?.transcript || "";
 
         if (result.isFinal) {
-          nextFinalText += `${transcript} `;
+          // Filter out filler words from final transcript
+          const cleanTranscript = transcript.replace(/\b(umm|uhm|hmm|uh|er|ah|like|you know)\b/gi, '').trim();
+          nextFinalText += `${cleanTranscript} `;
         } else {
           nextInterimText += `${transcript} `;
         }
@@ -131,7 +133,7 @@ export function useSpeechRecognition() {
     try {
       recognitionRef.current.start();
       return true;
-    } catch (startError) {
+    } catch (_startError) {
       // Don't show common speech recognition errors to user
       setError("");
       return false;

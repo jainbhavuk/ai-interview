@@ -91,11 +91,11 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         // Give more time for thinking
         responseTimeoutRef.current = window.setTimeout(() => {
           handleResponseTimeout();
-        }, 15000); // Additional 15 seconds for thinking
+        }, 20000); // Increased to 20 seconds to avoid premature analysis
       } else {
         handleResponseTimeout();
       }
-    }, 8000); // Initial 8 seconds before suggesting thinking time
+    }, 12000); // Increased from 8 to 12 seconds to allow natural pauses
   }
 
   async function handleResponseTimeout() {
@@ -334,13 +334,28 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       speech.resetTranscript();
       setIsUserThinking(false);
       setThinkingStartTime(null);
+      
+      // Add safety timeout to prevent getting stuck
+      const listeningTimeout = setTimeout(() => {
+        if (speech.isListening && phase === 'listening') {
+          console.warn('Listening mode stuck, forcing restart');
+          speech.stopListening();
+          setTimeout(() => {
+            startListeningMode();
+          }, 100);
+        }
+      }, 30000); // 30 second safety timeout
 
       const started = speech.startListening({
         continuous: false,
         interimResults: true,
         language: "en-US",
-        onEnd: handleListeningFinished,
+        onEnd: (transcript) => {
+          clearTimeout(listeningTimeout);
+          handleListeningFinished(transcript);
+        },
         onError: (message) => {
+          clearTimeout(listeningTimeout);
           if (message.includes("already started")) {
             return;
           }
@@ -402,6 +417,12 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     setThinkingStartTime(null);
     setPhase("ending");
     setStatusMessage("Ending interview...");
+    
+    // Add timeout to show "generating report" message
+    setTimeout(() => {
+      setStatusMessage("Generating your interview report...");
+    }, 2000);
+    
     interview.endInterviewNow();
   }
 
