@@ -14,6 +14,7 @@ export function useInterviewEngine(config) {
 
   const allQuestions = useRef([]);
   const stateRef = useRef({ transcript, currentQuestionIndex });
+  const dynamicFollowUpsAddedRef = useRef(0);
 
   useEffect(() => {
     stateRef.current = { transcript, currentQuestionIndex };
@@ -23,6 +24,7 @@ export function useInterviewEngine(config) {
     async function generateStructure() {
       try {
         setIsGenerating(true);
+        dynamicFollowUpsAddedRef.current = 0;
         const structure = await generateInterviewStructure(config);
         setInterviewStructure(structure);
 
@@ -110,7 +112,22 @@ export function useInterviewEngine(config) {
       ];
       setTranscript(newTranscript);
 
-      if (evaluation?.needsFollowUp && evaluation?.followUpQuestion) {
+      const maxDynamicFollowUps =
+        config?.durationMinutes === 10
+          ? 1
+          : config?.durationMinutes === 20
+            ? 2
+            : 3;
+      const isAlreadyADeepQuestion =
+        currentQuestion?.type === "followup" ||
+        currentQuestion?.type === "dynamic_followup";
+
+      if (
+        evaluation?.needsFollowUp &&
+        evaluation?.followUpQuestion &&
+        dynamicFollowUpsAddedRef.current < maxDynamicFollowUps &&
+        !isAlreadyADeepQuestion
+      ) {
         const followUpEntry = {
           id: `fu_${Date.now()}`,
           prompt: evaluation?.followUpQuestion || "",
@@ -124,6 +141,8 @@ export function useInterviewEngine(config) {
           0,
           followUpEntry,
         );
+
+        dynamicFollowUpsAddedRef.current += 1;
       }
 
       const nextIndex = currentQuestionIndex + 1;

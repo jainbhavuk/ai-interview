@@ -106,9 +106,16 @@ export async function generateInterviewStructure(config) {
   const candidateName = config?.candidateName || "Candidate";
   const domain = config?.domain || "software";
 
-  // Select 3 random behavioral questions
-  const shuffledBehavioral = [...BEHAVIORAL_QUESTIONS].sort(() => Math.random() - 0.5);
-  const selectedBehavioral = shuffledBehavioral.slice(0, 3);
+  const behavioralCount =
+    config?.durationMinutes === 10
+      ? 1
+      : config?.durationMinutes === 20
+        ? 1
+        : 2;
+  const shuffledBehavioral = [...BEHAVIORAL_QUESTIONS].sort(
+    () => Math.random() - 0.5,
+  );
+  const selectedBehavioral = shuffledBehavioral.slice(0, behavioralCount);
   
   const human = new HumanMessage(
     `${domain} ${config?.yoe || "unknown"} ${config?.durationMinutes || 15}min
@@ -145,46 +152,19 @@ ${selectedBehavioral.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
       parsed.introduction = `Hi ${candidateName}! Welcome, it's great to meet you. How's your day going so far? Before we dive into the technical questions, I'd love to hear a bit about yourself - your background, experience, and what brings you here today.`;
     }
     
-    // Add behavioral questions to the mix
+    // Add behavioral questions to the mix (later in the interview)
     if (parsed.questions && Array.isArray(parsed.questions)) {
-      // Insert behavioral questions at random positions
       const technicalQuestions = parsed.questions;
-      const allQuestions = [];
-      
-      // Distribute behavioral questions throughout the interview
-      const behavioralPositions = [];
-      const totalQuestions = technicalQuestions.length + 3;
-      
-      // Generate 3 random positions (avoid first and last positions)
-      while (behavioralPositions.length < 3) {
-        const pos = Math.floor(Math.random() * (totalQuestions - 2)) + 1; // Positions 1 to total-2
-        if (!behavioralPositions.includes(pos)) {
-          behavioralPositions.push(pos);
-        }
-      }
-      
-      behavioralPositions.sort((a, b) => a - b);
-      
-      let techIndex = 0;
-      let behavioralIndex = 0;
-      
-      for (let i = 0; i < totalQuestions; i++) {
-        if (behavioralPositions.includes(i) && behavioralIndex < 3) {
-          allQuestions.push({
-            id: `behavioral_${behavioralIndex + 1}`,
-            prompt: selectedBehavioral[behavioralIndex],
-            competency: "behavioral",
-            type: "main",
-            followUps: []
-          });
-          behavioralIndex++;
-        } else if (techIndex < technicalQuestions.length) {
-          allQuestions.push(technicalQuestions[techIndex]);
-          techIndex++;
-        }
-      }
-      
-      parsed.questions = allQuestions;
+
+      const behavioralQuestions = selectedBehavioral.map((prompt, index) => ({
+        id: `behavioral_${index + 1}`,
+        prompt,
+        competency: "behavioral",
+        type: "main",
+        followUps: [],
+      }));
+
+      parsed.questions = [...technicalQuestions, ...behavioralQuestions];
     }
     
     return parsed;
@@ -222,7 +202,19 @@ ${selectedBehavioral.map((q, i) => `${i + 1}. ${q}`).join('\n')}`
 
 export async function evaluateAnswer(question, answer, conversationHistory) {
   const system = new SystemMessage(
-    `JSON only. Evaluate answer quality and provide feedback.`,
+    `JSON only. Evaluate answer quality and provide feedback.
+
+Return JSON with keys:
+- score (1-5)
+- feedback (array of short strings)
+- needsFollowUp (boolean)
+- followUpQuestion (string, optional)
+
+Rules for followUpQuestion:
+- Only ask a follow-up if it's truly needed (missing critical technical detail).
+- The follow-up MUST be specific to the question/answer content (mention a concrete technology, decision, trade-off, metric, constraint, or step).
+- Do NOT ask generic questions like "How do you overcome challenges/hurdles?" or "How did you tackle difficulties?".
+- Keep it one sentence.`,
   );
 
   const context =
@@ -249,7 +241,20 @@ C:${context}
       .replace(/^```[a-z]*\n?/i, "")
       .replace(/```$/i, "")
       .trim();
-    return JSON.parse(clean);
+    const parsed = JSON.parse(clean);
+    const followUp = String(parsed?.followUpQuestion || "").trim();
+    const genericFollowUpPattern =
+      /(overcome|tackle|handle)\s+(hurdles|challenges|difficulties)|how\s+did\s+you\s+(overcome|tackle|handle)/i;
+
+    if (parsed?.needsFollowUp && followUp && genericFollowUpPattern.test(followUp)) {
+      return {
+        ...parsed,
+        needsFollowUp: false,
+        followUpQuestion: "",
+      };
+    }
+
+    return parsed;
   } catch (error) {
     console.error("Evaluation error:", error);
     return { score: 3, feedback: ["Unable to evaluate"], needsFollowUp: false };
@@ -365,7 +370,38 @@ ${conversation}
       .replace(/^```[a-z]*\n?/i, "")
       .replace(/```$/i, "")
       .trim();
-    return JSON.parse(clean);
+    const parsed = JSON.parse(clean);
+    const strengths =
+      parsed?.strengths ||
+      parsed?.interviewEvaluation?.strengths ||
+      parsed?.interviewEvaluation?.strength ||
+      [];
+    const improvements =
+      parsed?.improvements ||
+      parsed?.areasForImprovement ||
+      parsed?.interviewEvaluation?.areasForImprovement ||
+      parsed?.interviewEvaluation?.improvements ||
+      [];
+    const competencyScores =
+      parsed?.competencyScores ||
+      parsed?.interviewEvaluation?.competencyScores ||
+      {};
+
+    const normalizedStrengths = Array.isArray(strengths) ? strengths : [];
+    const normalizedImprovements = Array.isArray(improvements) ? improvements : [];
+
+    return {
+      ...parsed,
+      overallScore:
+        parsed?.overallScore ?? parsed?.interviewEvaluation?.overallScore ?? 3,
+      strengths: normalizedStrengths.length
+        ? normalizedStrengths
+        : ["Completed the interview"],
+      improvements: normalizedImprovements.length
+        ? normalizedImprovements
+        : ["Continue practicing"] ,
+      competencyScores,
+    };
   } catch (error) {
     console.error("Report generation error:", error);
     return {

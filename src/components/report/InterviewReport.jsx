@@ -14,12 +14,17 @@ export function InterviewReport({ report, onStartOver }) {
         <div className={styles.panel}>
           <h3>Competency Scores</h3>
           <ul>
-            {report?.competencyScores?.map?.((item, index) => (
-              <li key={item?.competency || `competency-${index}`}>
-                <span>{item?.competency || 'Unknown'}</span>
-                <strong>{item?.score || 0}/5</strong>
-              </li>
-            )) || <li>No competency data available</li>}
+            {Array.isArray(report?.competencyScores) &&
+            report.competencyScores.length > 0 ? (
+              report.competencyScores.map((item, index) => (
+                <li key={item?.competency || `competency-${index}`}>
+                  <span>{item?.competency || "Unknown"}</span>
+                  <strong>{item?.score || 0}/5</strong>
+                </li>
+              ))
+            ) : (
+              <li>No competency data available</li>
+            )}
           </ul>
         </div>
 
@@ -42,18 +47,29 @@ export function InterviewReport({ report, onStartOver }) {
         <div className={styles.panel}>
           <h3>Strengths</h3>
           <ul>
-            {report?.strengths?.map?.((item, index) => (
-              <li key={item || `strength-${index}`}>{item || 'Strength'}</li>
-            )) || <li>No strengths identified</li>}
+            {Array.isArray(report?.strengths) && report.strengths.length > 0 ? (
+              report.strengths.map((item, index) => (
+                <li key={item || `strength-${index}`}>{item || "Strength"}</li>
+              ))
+            ) : (
+              <li>No strengths identified</li>
+            )}
           </ul>
         </div>
 
         <div className={styles.panel}>
           <h3>Improvements</h3>
           <ul>
-            {report?.improvements?.map?.((item, index) => (
-              <li key={item || `improvement-${index}`}>{item || 'Improvement'}</li>
-            )) || <li>No improvements needed</li>}
+            {Array.isArray(report?.improvements) &&
+            report.improvements.length > 0 ? (
+              report.improvements.map((item, index) => (
+                <li key={item || `improvement-${index}`}>
+                  {item || "Improvement"}
+                </li>
+              ))
+            ) : (
+              <li>No improvements needed</li>
+            )}
           </ul>
         </div>
       </div>

@@ -501,12 +501,19 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     return (
       <section className={styles.stage}>
         <div className={styles.leftStage}>
-          <div className={styles.voiceStage}>
-            <div className={styles.orbWrap} data-phase="processing">
-              <span className={styles.orb} />
-            </div>
-            <p className={styles.liveTag}>
-              Generating personalized interview...
+          <header className={styles.headline}>
+            <h2 id="voice-interview-title">Generating...</h2>
+            <span>...</span>
+          </header>
+
+          <div
+            className={styles.speechBubble}
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <div className={styles.bubbleDot} />
+            <p>
+              <strong>Status:</strong> Preparing your interview questions...
             </p>
           </div>
         </div>
@@ -525,6 +532,48 @@ export function InterviewSession({ config, onComplete, onAbort }) {
             </div>
           </div>
         </aside>
+      </section>
+    );
+  }
+
+  if (hasStarted && !interview?.currentQuestion && !interview?.report) {
+    return (
+      <section className={styles.stage} aria-labelledby="voice-interview-title">
+        <div className={styles.leftStage}>
+          <header className={styles.headline}>
+            <h2 id="voice-interview-title">Finalizing</h2>
+            <span>...</span>
+          </header>
+
+          <div
+            className={styles.speechBubble}
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <div className={styles.bubbleDot} />
+            <p>
+              <strong>Status:</strong> Generating your interview report...
+            </p>
+          </div>
+
+          <div className={styles.voiceStage}>
+            <div className={styles.orbWrap} data-phase="processing">
+              <span className={styles.orb} />
+            </div>
+            <p className={styles.liveTag}>Processing...</p>
+          </div>
+
+          <div className={styles.controls}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={handleEndInterview}
+              disabled
+            >
+              End Interview
+            </button>
+          </div>
+        </div>
       </section>
     );
   }
