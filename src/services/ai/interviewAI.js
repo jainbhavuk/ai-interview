@@ -68,8 +68,15 @@ export async function generateInterviewStructure(config) {
     The introduction should be warm, welcoming, and human-like. Ask the candidate to introduce themselves.
     Generate specific technical questions based on resume and job description. No generic questions like "tell me about yourself" in the questions array.
     
+    IMPORTANT: Make questions feel personalized by referencing specific resume content:
+    - Instead of "Tell me about your experience", say "I see you worked at [Company] on your resume. Can you tell me more about your role there?"
+    - Instead of "What projects did you work on", say "Your resume mentions [Project]. What was your biggest challenge with that project?"
+    - Instead of "What skills do you have", say "You listed [Skill] on your resume. How did you use that in your last project?"
+    - Use variations like: "As you mentioned in your resume...", "I noticed on your CV...", "Based on your experience with...", "You mentioned working with..."
+    - For follow-ups: "How did you improve that?", "What was the outcome?", "Did you face any challenges with that?"
+    
     Make the introduction conversational and friendly, like:
-    "Hi [Name]! Welcome, it's great to meet you. How's your day going so far? Before we dive into the technical questions, I'd love to hear a bit about yourself - your background, experience, and what brings you here today."`,
+    "Hi [Name]! Welcome, it's great to meet you. I've had a chance to review your resume and I'm impressed with your background. How's your day going so far? Before we dive into the technical questions, I'd love to hear a bit about yourself - your background, experience, and what brings you here today."`,
   );
 
   const resumeSummary = config?.resumeText || "No resume";
@@ -111,6 +118,12 @@ JD: ${finalJdText}
 
 CRITICAL: You must respond with valid JSON exactly in this format:
 {"introduction":"Hi ${candidateName}, welcome! Please introduce yourself and tell me a bit about your experience and background.","questions":[{"id":"q1","prompt":"Describe a specific ${domain} project you worked on and the technical challenges you faced.","competency":"technical","type":"main","followUps":[{"id":"q1_f1","prompt":"How did you approach solving those challenges?"}]}]}
+
+REMEMBER: Make questions feel personalized by referencing specific resume content:
+- Use phrases like "I see on your resume...", "You mentioned...", "Based on your experience with..."
+- Reference actual companies, projects, skills, and achievements from the resume
+- Ask follow-ups like "How did you improve that?", "What was the outcome?", "What challenges did you face?"
+- Vary your approach - don't use the same template repeatedly
 
 Generate ${questionCount - 3} specific technical questions about ${domain} skills and projects. I will add 3 behavioral questions separately. The introduction must come first and ask for self-introduction.
 
