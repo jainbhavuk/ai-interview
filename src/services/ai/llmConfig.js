@@ -5,6 +5,6 @@ export function createLLM() {
     apiKey: import.meta.env.VITE_OPENAI_API_KEY || "",
     model: "gpt-4o",
     maxTokens: 10000,
-    temperature: 0.7,
+    temperature: 0.6,
   });
 }

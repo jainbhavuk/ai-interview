@@ -4,13 +4,6 @@ export function InterviewReport({ report, onStartOver }) {
   return (
     <section className={styles.card} aria-labelledby="report-title">
       <header className={styles.header}>
-        <div>
-          <h2 id="report-title">Interview Report</h2>
-          <p>
-            Candidate: <strong>{report?.candidateName || 'Unknown'}</strong> | Template:{" "}
-            <strong>{report?.templateLabel ?? 'Interview'}</strong>
-          </p>
-        </div>
         <div className={styles.scoreBadge} role="status" aria-live="polite">
           <span>Overall</span>
           <strong>{report?.overallScore !== undefined ? Math.round(report?.overallScore) : 0}/5</strong>
@@ -65,13 +58,15 @@ export function InterviewReport({ report, onStartOver }) {
         </div>
       </div>
 
-      <button
-        type="button"
-        className={styles.primaryButton}
-        onClick={onStartOver}
-      >
-        Start New Mock Interview
-      </button>
+      <div className={styles.actionContainer}>
+        <button
+          type="button"
+          className={styles.primaryButton}
+          onClick={onStartOver}
+        >
+          Start New Mock Interview
+        </button>
+      </div>
     </section>
   );
 }

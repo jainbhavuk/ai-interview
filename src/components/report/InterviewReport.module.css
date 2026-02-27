@@ -112,6 +112,13 @@
   letter-spacing: 0.025em;
 }
 
+.actionContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+  padding: 0 24px;
+}
+
 .primaryButton:hover {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   transform: translateY(-1px);

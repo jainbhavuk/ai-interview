@@ -75,8 +75,8 @@ export async function generateInterviewStructure(config) {
     - Use variations like: "As you mentioned in your resume...", "I noticed on your CV...", "Based on your experience with...", "You mentioned working with..."
     - For follow-ups: "How did you improve that?", "What was the outcome?", "Did you face any challenges with that?"
     
-    Make the introduction conversational and friendly, like:
-    "Hi [Name]! Welcome, it's great to meet you. I've had a chance to review your resume and I'm impressed with your background. How's your day going so far? Before we dive into the technical questions, I'd love to hear a bit about yourself - your background, experience, and what brings you here today."`,
+    Make the introduction conversational and friendly, MAXIMUM 3 SENTENCES:
+    "Hi [Name]! Welcome, it's great to meet you. I've reviewed your resume and I'm impressed with your background. Before we dive into the technical questions, I'd love to hear a bit about yourself and your experience."`,
   );
 
   const resumeSummary = config?.resumeText || "No resume";

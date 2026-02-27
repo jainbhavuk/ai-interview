@@ -20,6 +20,8 @@ export function InterviewSession({ config, onComplete, onAbort }) {
 
   const turnTimerRef = useRef(null);
   const responseTimeoutRef = useRef(null);
+  const endInterviewTimeoutsRef = useRef({ reportMessage: null, forceComplete: null });
+  const endingRequestedRef = useRef(false);
   const interviewRef = useRef(null);
   const stopListeningRef = useRef(() => {});
   const cancelVoiceRef = useRef(() => {});
@@ -37,19 +39,34 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       ?.map((part) => part?.[0]?.toUpperCase())
       ?.join("") || "U";
 
-  useEffect(() => {
-    if (interview?.report && !isEnding) {
-      try {
-        setStatusMessage("Interview complete! Generating your report...");
-        if (typeof onComplete === 'function') {
-          onComplete(interview?.report);
-        }
-      } catch (error) {
-        console.error('Error completing interview:', error);
-        setSystemError('Failed to complete interview. Please try again.');
-      }
+  function clearEndInterviewTimeouts() {
+    if (endInterviewTimeoutsRef.current?.reportMessage) {
+      window.clearTimeout(endInterviewTimeoutsRef.current.reportMessage);
+      endInterviewTimeoutsRef.current.reportMessage = null;
     }
-  }, [interview?.report, onComplete, isEnding]);
+    if (endInterviewTimeoutsRef.current?.forceComplete) {
+      window.clearTimeout(endInterviewTimeoutsRef.current.forceComplete);
+      endInterviewTimeoutsRef.current.forceComplete = null;
+    }
+  }
+
+  useEffect(() => {
+    if (!interview?.report) return;
+
+    clearEndInterviewTimeouts();
+
+    try {
+      setStatusMessage("Interview complete! Showing your report...");
+      if (typeof onComplete === "function") {
+        onComplete(interview.report);
+      }
+    } catch (error) {
+      console.error("Error completing interview:", error);
+      setSystemError("Failed to complete interview. Please try again.");
+      setPhase("error");
+      setIsProcessing(false);
+    }
+  }, [interview?.report, onComplete]);
 
   useEffect(() => {
     interviewRef.current = interview;
@@ -99,7 +116,8 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   }
 
   async function handleResponseTimeout() {
-    if (!hasStarted || isProcessing || isEnding) return;
+    if (!hasStarted || isProcessing || isEnding || endingRequestedRef.current)
+      return;
     
     const thinkingDuration = thinkingStartTime ? (Date.now() - thinkingStartTime) / 1000 : 0;
     
@@ -140,7 +158,8 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   }
 
   async function handleUserInput(userInput) {
-    if (!hasStarted || isProcessing) return;
+    if (!hasStarted || isProcessing || isEnding || endingRequestedRef.current)
+      return;
 
     setIsProcessing(true);
     setPhase("processing");
@@ -198,7 +217,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   }
 
   function scheduleNextQuestion(delay = 1000) {
-    if (isEnding) return;
+    if (isEnding || endingRequestedRef.current) return;
     
     clearTurnTimer();
     turnTimerRef.current = window.setTimeout(() => {
@@ -213,7 +232,14 @@ export function InterviewSession({ config, onComplete, onAbort }) {
 
   async function handleListeningFinished(answer) {
     const runtime = interviewRef.current;
-    if (!runtime || runtime.isComplete || runtime.report || isProcessing || isEnding)
+    if (
+      !runtime ||
+      runtime.isComplete ||
+      runtime.report ||
+      isProcessing ||
+      isEnding ||
+      endingRequestedRef.current
+    )
       return;
 
     const cleanAnswer = String(answer || "").trim();
@@ -275,7 +301,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     setIsProcessing(true);
 
     // Don't process if interview is ending
-    if (isEnding) {
+    if (isEnding || endingRequestedRef.current) {
       return;
     }
 
@@ -324,7 +350,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   }
 
   function startListeningMode() {
-    if (isEnding) return;
+    if (isEnding || endingRequestedRef.current) return;
     
     try {
       if (speech.isListening) {
@@ -379,7 +405,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   }
 
   function speakLine(line, onEndAction = "listen") {
-    if (!line || isEnding) return;
+    if (!line || isEnding || endingRequestedRef.current) return;
 
     setSystemError("");
     setPhase("ai-speaking");
@@ -388,25 +414,30 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     clearResponseTimer();
 
     if (!voice.isSupported) {
-      if (onEndAction === "listen" && !isEnding) startListeningMode();
-      if (onEndAction === "wait" && !isEnding) scheduleNextQuestion();
+      if (onEndAction === "listen" && !isEnding && !endingRequestedRef.current)
+        startListeningMode();
+      if (onEndAction === "wait" && !isEnding && !endingRequestedRef.current)
+        scheduleNextQuestion();
       return;
     }
 
     const started = voice.speak(line, {
       onEnd: () => {
+        if (endingRequestedRef.current) return;
         if (onEndAction === "listen" && !isEnding) startListeningMode();
         if (onEndAction === "wait" && !isEnding) scheduleNextQuestion();
       },
     });
 
     if (!started) {
+      if (endingRequestedRef.current) return;
       if (onEndAction === "listen" && !isEnding) startListeningMode();
       if (onEndAction === "wait" && !isEnding) scheduleNextQuestion();
     }
   }
 
   function handleEndInterview() {
+    endingRequestedRef.current = true;
     clearTurnTimer();
     clearResponseTimer();
     voice.cancel();
@@ -417,33 +448,23 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     setThinkingStartTime(null);
     setPhase("ending");
     setStatusMessage("Ending interview...");
-    
-    // Declare timeout variable in outer scope
-    let forceCompleteTimeout;
-    
-    // Add safety timeout to prevent getting stuck
-    const endTimeout = setTimeout(() => {
+
+    clearEndInterviewTimeouts();
+
+    endInterviewTimeoutsRef.current.reportMessage = window.setTimeout(() => {
       setStatusMessage("Generating your interview report...");
-      
-      // Final safety timeout to force completion
-      forceCompleteTimeout = setTimeout(() => {
-        console.warn('Interview ending stuck, forcing completion');
-        setSystemError('Interview completion timed out. Please try again.');
-        setPhase('error');
-        setIsProcessing(false);
-      }, 15000); // 15 second max wait for report generation
-      
-      interview.endInterviewNow();
-    }, 2000);
-    
-    // Cleanup function to prevent memory leaks
-    const cleanup = () => {
-      clearTimeout(endTimeout);
-      clearTimeout(forceCompleteTimeout);
-    };
-    
-    // Store cleanup for potential abort
-    window.interviewCleanup = cleanup;
+    }, 1000);
+
+    endInterviewTimeoutsRef.current.forceComplete = window.setTimeout(() => {
+      console.warn("Interview ending stuck, forcing completion");
+      setSystemError(
+        "Interview completion is taking longer than expected. Please try starting a new interview.",
+      );
+      setPhase("error");
+      setIsProcessing(false);
+    }, 45000);
+
+    interview.endInterviewNow();
   }
 
   function askQuestionByPrompt(prompt) {
@@ -477,16 +498,13 @@ export function InterviewSession({ config, onComplete, onAbort }) {
 
   useEffect(() => {
     return () => {
+      endingRequestedRef.current = true;
       if (turnTimerRef.current) window.clearTimeout(turnTimerRef.current);
       if (responseTimeoutRef.current)
         window.clearTimeout(responseTimeoutRef.current);
       cancelVoiceRef.current();
       stopListeningRef.current();
-      // Clean up interview ending timeouts
-      if (window.interviewCleanup) {
-        window.interviewCleanup();
-        delete window.interviewCleanup;
-      }
+      clearEndInterviewTimeouts();
     };
   }, []);
 
