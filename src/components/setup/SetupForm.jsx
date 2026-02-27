@@ -46,8 +46,8 @@ export function SetupForm({ onStartInterview }) {
       return;
     }
 
-    if (!jdText.trim()) {
-      setError("Job Description is required.");
+    if (!resumeText.trim() && !jdText.trim()) {
+      setError("Please provide either a resume or a job description.");
       return;
     }
 
@@ -130,7 +130,7 @@ export function SetupForm({ onStartInterview }) {
             onChange={(event) => setJdText(event.target.value)}
             placeholder="Paste the job description here..."
             rows={4}
-            required
+            required={!resumeText.trim()}
           />
         </div>
 

@@ -4,6 +4,7 @@
   grid-template-columns: 1fr 280px;
   gap: 40px;
   max-width: 100%;
+  width: 100%;
   overflow-x: hidden;
   padding: 0 16px;
   margin-top: 16px;
@@ -17,6 +18,7 @@
 
   .rightRail {
     flex-direction: row;
+    flex-wrap: wrap;
     margin-top: 24px;
     gap: 24px;
   }

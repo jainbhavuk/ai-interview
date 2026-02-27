@@ -22,6 +22,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   const responseTimeoutRef = useRef(null);
   const endInterviewTimeoutsRef = useRef({ reportMessage: null, forceComplete: null });
   const endingRequestedRef = useRef(false);
+  const awaitingIntroductionRef = useRef(false);
   const interviewRef = useRef(null);
   const stopListeningRef = useRef(() => {});
   const cancelVoiceRef = useRef(() => {});
@@ -31,6 +32,18 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   const voice = useSpeechSynthesis();
 
   const visibleError = systemError || speech?.error || voice?.error;
+  const userStatusLabel =
+    phase === "listening"
+      ? "Speaking"
+      : phase === "ai-speaking"
+        ? "Listening"
+        : phase === "processing"
+          ? "Processing"
+          : phase === "ending"
+            ? "Ending"
+            : phase === "error"
+              ? "Error"
+              : "Ready";
   const candidateInitials =
     config?.candidateName
       ?.split(/\s+/)
@@ -157,65 +170,6 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     }
   }
 
-  async function handleUserInput(userInput) {
-    if (!hasStarted || isProcessing || isEnding || endingRequestedRef.current)
-      return;
-
-    setIsProcessing(true);
-    setPhase("processing");
-    clearResponseTimer();
-
-    try {
-      const response = await handleUserResponse(
-        userInput,
-        interview?.currentQuestion?.prompt || "",
-        interview?.transcript || [],
-        config?.yoe,
-      );
-
-      if (response?.intent === "clarify" || response?.intent === "repeat") {
-        speakLine(
-          response?.response ||
-            interview?.currentQuestion?.prompt ||
-            "Let me repeat the question.",
-          "listen",
-        );
-      } else if (response?.intent === "thinking") {
-        const extraTime = response?.extraTime || 20;
-        setIsUserThinking(true);
-        setThinkingStartTime(Date.now());
-        setStatusMessage(`Take your time... (${extraTime}s)`);
-        speakLine(response?.response || "Take your time. I'll wait while you think.", "wait");
-        
-        setTimeout(() => {
-          startListeningMode();
-        }, 2000);
-        
-        // Extended timeout for thinking
-        responseTimeoutRef.current = window.setTimeout(() => {
-          handleResponseTimeout();
-        }, extraTime * 1000);
-      } else if (response?.intent === "ready") {
-        setStatusMessage("Ready when you are...");
-        setTimeout(() => {
-          startListeningMode();
-        }, 1000);
-      } else if (response?.intent === "answer") {
-        await handleListeningFinished(userInput);
-      } else {
-        speakLine(
-          response?.response || "Please answer the question.",
-          "listen",
-        );
-      }
-    } catch (error) {
-      console.error("User input handling error:", error);
-      speakLine("Could you please repeat that?", "listen");
-    } finally {
-      setIsProcessing(false);
-    }
-  }
-
   function scheduleNextQuestion(delay = 1000) {
     if (isEnding || endingRequestedRef.current) return;
     
@@ -242,6 +196,30 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     )
       return;
 
+    if (awaitingIntroductionRef.current) {
+      awaitingIntroductionRef.current = false;
+      setSystemError("");
+      setPhase("processing");
+      setStatusMessage("Got it. Let's continue...");
+
+      const acknowledgments = [
+        "Great.",
+        "Thanks.",
+        "Got it.",
+        "Perfect.",
+      ];
+      const ack = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
+      speakLine(ack, "wait");
+
+      setTimeout(() => {
+        const nextPrompt = runtime?.currentQuestion?.prompt;
+        if (nextPrompt && !endingRequestedRef.current && !isEnding) {
+          askQuestionByPrompt(nextPrompt);
+        }
+      }, 900);
+      return;
+    }
+
     const cleanAnswer = String(answer || "").trim();
 
     // Use AI to determine how to handle the response
@@ -265,7 +243,13 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       }
 
       if (response?.intent === "clarify" || response?.intent === "repeat") {
-        await handleUserInput(cleanAnswer);
+        setStatusMessage("Sure — let me clarify.");
+        speakLine(
+          response?.response ||
+            interview?.currentQuestion?.prompt ||
+            "Let me repeat the question.",
+          "listen",
+        );
         return;
       }
 
@@ -488,6 +472,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     setStatusMessage("Starting interview...");
 
     if (interview?.introduction) {
+      awaitingIntroductionRef.current = true;
       speakLine(interview?.introduction, "listen");
     } else {
       askQuestionByPrompt(
@@ -579,16 +564,16 @@ export function InterviewSession({ config, onComplete, onAbort }) {
           <div className={styles.bubbleDot} />
           {phase === "ai-speaking" ? (
             <p>
-              <strong>AI:</strong> {aiSubtitle}
+              <strong>Interviewer:</strong> {aiSubtitle}
             </p>
           ) : phase === "listening" ? (
             <p>
-              <strong>You:</strong>{" "}
+              <strong>You (speaking):</strong>{" "}
               {speech?.interimTranscript || speech?.finalTranscript || "..."}
             </p>
           ) : (
             <p>
-              <strong>AI:</strong> {statusMessage}
+              <strong>Status:</strong> {statusMessage}
             </p>
           )}
         </div>
@@ -598,9 +583,14 @@ export function InterviewSession({ config, onComplete, onAbort }) {
             <span className={styles.orb} />
           </div>
           {phase === "listening" && (
-            <p className={styles.liveTag}>Listening...</p>
+            <p className={styles.liveTag}>You are speaking...</p>
           )}
-          {isProcessing && <p className={styles.liveTag}>Processing...</p>}
+          {phase === "ai-speaking" && (
+            <p className={styles.liveTag}>Interviewer is speaking...</p>
+          )}
+          {isProcessing && phase !== "listening" && phase !== "ai-speaking" && (
+            <p className={styles.liveTag}>Processing...</p>
+          )}
         </div>
 
         <div className={styles.controls}>
@@ -654,7 +644,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
           <div className={styles.avatar}>{candidateInitials || "U"}</div>
           <div className={styles.userMeta}>
             <p>{config?.candidateName}</p>
-            <span>{phase === "listening" ? "Speaking" : "Ready"}</span>
+            <span>{userStatusLabel}</span>
           </div>
         </div>
       </aside>
