@@ -62,6 +62,18 @@ const BEHAVIORAL_QUESTIONS = [
   "Tell me about a time you had to recover from setbacks."
 ];
 
+const INTRODUCTION_TEMPLATES = [
+  "Hi [Name]! Welcome, it's great to meet you. I've reviewed your resume and I'm impressed with your background. Before we dive into the technical questions, I'd love to hear a bit about yourself and your experience.",
+  
+  "Hello [Name]! Thanks for joining me today. I've had a chance to look through your resume and it looks really impressive. To get started, could you tell me a little about your professional journey and what brings you here?",
+  
+  "Hi [Name]! Great to connect with you. Your background looks really interesting based on your resume. I'd love to hear your story first - could you introduce yourself and share what you're most passionate about in your work?",
+  
+  "Welcome [Name]! It's a pleasure to meet you. I've reviewed your experience and I'm excited to learn more about you. To kick things off, could you tell me about your professional background and what you enjoy most about your field?",
+  
+  "Hi there [Name]! Thanks for taking the time to interview with me. Your resume shows some really impressive work. Before we get into the technical details, I'd love to hear about your journey and what motivates you in your career."
+];
+
 export async function generateInterviewStructure(config) {
   const system = new SystemMessage(
     `JSON only. You must respond with valid JSON containing exactly two keys: "introduction" and "questions". 
@@ -75,8 +87,7 @@ export async function generateInterviewStructure(config) {
     - Use variations like: "As you mentioned in your resume...", "I noticed on your CV...", "Based on your experience with...", "You mentioned working with..."
     - For follow-ups: "How did you improve that?", "What was the outcome?", "Did you face any challenges with that?"
     
-    Make the introduction conversational and friendly, MAXIMUM 3 SENTENCES:
-    "Hi [Name]! Welcome, it's great to meet you. I've reviewed your resume and I'm impressed with your background. Before we dive into the technical questions, I'd love to hear a bit about yourself and your experience."`,
+    Use the provided introduction template exactly as given, just replace [Name] with the candidate name.`,
   );
 
   const resumeSummary = config?.resumeText || "No resume";
@@ -117,6 +128,10 @@ export async function generateInterviewStructure(config) {
   );
   const selectedBehavioral = shuffledBehavioral.slice(0, behavioralCount);
   
+  // Randomly select an introduction template
+  const randomIntro = INTRODUCTION_TEMPLATES[Math.floor(Math.random() * INTRODUCTION_TEMPLATES.length)];
+  const personalizedIntro = randomIntro.replace(/\[Name\]/g, candidateName);
+  
   const human = new HumanMessage(
     `${domain} ${config?.yoe || "unknown"} ${config?.durationMinutes || 15}min
 ${candidateName}
@@ -124,7 +139,9 @@ Resume: ${finalResumeText}
 JD: ${finalJdText}
 
 CRITICAL: You must respond with valid JSON exactly in this format:
-{"introduction":"Hi ${candidateName}, welcome! Please introduce yourself and tell me a bit about your experience and background.","questions":[{"id":"q1","prompt":"Describe a specific ${domain} project you worked on and the technical challenges you faced.","competency":"technical","type":"main","followUps":[{"id":"q1_f1","prompt":"How did you approach solving those challenges?"}]}]}
+{"introduction":"${personalizedIntro}","questions":[{"id":"q1","prompt":"Describe a specific ${domain} project you worked on and the technical challenges you faced.","competency":"technical","type":"main","followUps":[{"id":"q1_f1","prompt":"How did you approach solving those challenges?"}]}]}
+
+Use this exact introduction: "${personalizedIntro}"
 
 REMEMBER: Make questions feel personalized by referencing specific resume content:
 - Use phrases like "I see on your resume...", "You mentioned...", "Based on your experience with..."
