@@ -295,21 +295,18 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         return;
       }
 
-      const evaluation = result?.evaluation || {};
-      let feedbackText = "";
-
-      if (evaluation?.feedback && Array.isArray(evaluation.feedback) && evaluation.feedback.length > 0) {
-        feedbackText = evaluation.feedback[0] || "";
-      } else {
-        const neutralResponses = [
-          "Good point, let's continue.",
-          "Thanks for sharing.",
-          "I understand.",
-          "That makes sense.",
-        ];
-        feedbackText =
-          neutralResponses[Math.floor(Math.random() * neutralResponses.length)];
-      }
+      // Use simple acknowledgments instead of AI feedback for voice
+      const acknowledgments = [
+        "Okay",
+        "Great", 
+        "Got it",
+        "Thanks",
+        "Good",
+        "Alright",
+        "Understood",
+        "Perfect"
+      ];
+      const feedbackText = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
 
       speakLine(feedbackText, "wait");
 
@@ -382,7 +379,6 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     }
 
     const started = voice.speak(line, {
-      rate: 1.1,
       onEnd: () => {
         if (onEndAction === "listen" && !isEnding) startListeningMode();
         if (onEndAction === "wait" && !isEnding) scheduleNextQuestion();
