@@ -418,12 +418,32 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     setPhase("ending");
     setStatusMessage("Ending interview...");
     
-    // Add timeout to show "generating report" message
-    setTimeout(() => {
+    // Declare timeout variable in outer scope
+    let forceCompleteTimeout;
+    
+    // Add safety timeout to prevent getting stuck
+    const endTimeout = setTimeout(() => {
       setStatusMessage("Generating your interview report...");
+      
+      // Final safety timeout to force completion
+      forceCompleteTimeout = setTimeout(() => {
+        console.warn('Interview ending stuck, forcing completion');
+        setSystemError('Interview completion timed out. Please try again.');
+        setPhase('error');
+        setIsProcessing(false);
+      }, 15000); // 15 second max wait for report generation
+      
+      interview.endInterviewNow();
     }, 2000);
     
-    interview.endInterviewNow();
+    // Cleanup function to prevent memory leaks
+    const cleanup = () => {
+      clearTimeout(endTimeout);
+      clearTimeout(forceCompleteTimeout);
+    };
+    
+    // Store cleanup for potential abort
+    window.interviewCleanup = cleanup;
   }
 
   function askQuestionByPrompt(prompt) {
@@ -462,6 +482,11 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         window.clearTimeout(responseTimeoutRef.current);
       cancelVoiceRef.current();
       stopListeningRef.current();
+      // Clean up interview ending timeouts
+      if (window.interviewCleanup) {
+        window.interviewCleanup();
+        delete window.interviewCleanup;
+      }
     };
   }, []);
 

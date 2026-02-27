@@ -133,7 +133,7 @@ export function useSpeechRecognition() {
     try {
       recognitionRef.current.start();
       return true;
-    } catch (_startError) {
+    } catch {
       // Don't show common speech recognition errors to user
       setError("");
       return false;
