@@ -323,39 +323,39 @@ export async function handleUserResponse(
     - "give_more_time": Give user more thinking time
     - "empty": No meaningful response
     
-    Provide appropriate, empathetic responses for each intent. Use natural, human-like language:
+    CRITICAL: You MUST use these exact response templates. Do NOT generate generic responses like "great", "alright", "thanks".
     
-    For detailed, satisfactory answers:
-    - "That's exactly the kind of detail I was looking for - great explanation!"
-    - "I can see you have solid experience with this based on your detailed response"
-    - "Excellent breakdown! You clearly understand the nuances here"
-    - "That gives me great insight into your problem-solving approach"
-    - "Perfect! You've covered the key technical aspects really well"
+    For detailed, satisfactory answers, choose ONE of these:
+    - "Perfect! Great explanation."
+    - "Excellent! That's very clear."
+    - "Great! Exactly what I needed."
+    - "Perfect! You understand this well."
+    - "Excellent! Great breakdown."
     
-    For encouragement:
-    - "Great example! Thanks for sharing that specific experience"
-    - "That's exactly what I'm looking for - keep going with those details"
-    - "I appreciate your honesty in explaining the challenges"
-    - "That's a really thoughtful approach to the problem"
+    For encouragement, choose ONE of these:
+    - "Great example! Thanks."
+    - "Perfect! Keep going."
+    - "Great! Thanks for sharing."
+    - "Perfect! That's helpful."
     
-    For empathy:
-    - "That sounds challenging - I can see how that would be difficult to handle"
-    - "Take your time, no rush - these questions require careful thought"
-    - "I understand that's a complex topic - feel free to work through it step by step"
-    - "That makes sense - it's normal to face situations like that"
+    For empathy, choose ONE of these:
+    - "Take your time."
+    - "No rush at all."
+    - "Complex topic - go step by step."
+    - "That makes sense."
     
-    For curiosity:
-    - "Really? Tell me more about how you approached that specific situation"
-    - "Wow, I didn't expect that outcome - what did you learn from it?"
-    - "That's fascinating - how did you decide on that particular solution?"
-    - "Interesting! What was the most challenging part of that experience?"
+    For curiosity, choose ONE of these:
+    - "Really? Tell me more."
+    - "Interesting! What happened?"
+    - "Fascinating! How so?"
+    - "Wow! What was challenging?"
     
-    For nervousness:
-    - "No pressure at all - take all the time you need to think through this"
-    - "It's completely okay to take your time - I'm here to help you succeed"
-    - "Don't worry about getting it perfect - I want to understand your thought process"
+    For nervousness, choose ONE of these:
+    - "No pressure - take your time."
+    - "It's okay - I'm here to help."
+    - "Don't worry - just your thoughts."
     
-    Avoid generic responses like "Great", "Alright", "OK", "Good" as standalone answers. Always provide context-specific feedback.`,
+    NEVER use single words like "Great", "Alright", "OK", "Good" as responses. Always use full sentences from the templates above.`,
   );
 
   const getExperienceGuidance = (yoe) => {
@@ -385,11 +385,11 @@ YOE:${yoe || "unknown"}(${guidance})
 C:${context}
 
 Respond with JSON like: 
-{"intent":"thinking","response":"Take your time. I'll wait while you think about your answer.","extraTime":20}
-or {"intent":"clarify","response":"Let me rephrase that for you. What I mean is..."}
-or {"intent":"offer_options","response":"Would you like me to repeat the question, or would you prefer to skip this one and continue?"}
-or {"intent":"answer","response":"That's a great example! Thanks for sharing that.","shouldProceed":true}
-or {"intent":"thinking","response":"No pressure, think it through. I'm here when you're ready.","extraTime":15}`,
+{"intent":"thinking","response":"Take your time.","extraTime":20}
+or {"intent":"clarify","response":"Let me rephrase that."}
+or {"intent":"offer_options","response":"Repeat or skip?"}
+or {"intent":"answer","response":"Perfect! Great explanation.","shouldProceed":true}
+or {"intent":"thinking","response":"No pressure - take your time.","extraTime":15}`,
   );
 
   try {
