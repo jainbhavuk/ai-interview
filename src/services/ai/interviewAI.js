@@ -72,10 +72,24 @@ export async function generateInterviewStructure(config) {
     "Hi [Name]! Welcome, it's great to meet you. How's your day going so far? Before we dive into the technical questions, I'd love to hear a bit about yourself - your background, experience, and what brings you here today."`,
   );
 
-  const resumeSummary = config?.resumeText
-    ? config.resumeText.slice(0, 500)
-    : "No resume";
-  const jdSummary = config?.jdText?.slice(0, 500) || "No job description";
+  const resumeSummary = config?.resumeText || "No resume";
+  const jdSummary = config?.jdText || "No job description";
+  
+  // Ensure combined text doesn't exceed token limit (roughly 4 chars per token)
+  const maxChars = 18000; // ~4500 tokens for prompt + response
+  const combinedText = `${resumeSummary} ${jdSummary}`;
+  
+  let finalResumeText = resumeSummary;
+  let finalJdText = jdSummary;
+  
+  if (combinedText.length > maxChars) {
+    // Proportionally truncate both to fit within limit
+    const resumeRatio = resumeSummary.length / combinedText.length;
+    const jdRatio = jdSummary.length / combinedText.length;
+    
+    finalResumeText = resumeSummary.slice(0, Math.floor(maxChars * resumeRatio));
+    finalJdText = jdSummary.slice(0, Math.floor(maxChars * jdRatio));
+  }
   const questionCount =
     config?.durationMinutes === 10
       ? 5
@@ -92,8 +106,8 @@ export async function generateInterviewStructure(config) {
   const human = new HumanMessage(
     `${domain} ${config?.yoe || "unknown"} ${config?.durationMinutes || 15}min
 ${candidateName}
-Resume: ${resumeSummary}
-JD: ${jdSummary}
+Resume: ${finalResumeText}
+JD: ${finalJdText}
 
 CRITICAL: You must respond with valid JSON exactly in this format:
 {"introduction":"Hi ${candidateName}, welcome! Please introduce yourself and tell me a bit about your experience and background.","questions":[{"id":"q1","prompt":"Describe a specific ${domain} project you worked on and the technical challenges you faced.","competency":"technical","type":"main","followUps":[{"id":"q1_f1","prompt":"How did you approach solving those challenges?"}]}]}
