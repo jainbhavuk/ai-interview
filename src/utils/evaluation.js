@@ -54,11 +54,11 @@ export function evaluateAnswer(answer, question) {
 
   const feedback = [];
   if (wordCount < 25)
-    feedback.push("Add more depth and structure in your explanation.");
+    feedback.push("Add more detail to your explanation.");
   if (!hasMetric) feedback.push("Include at least one measurable outcome.");
   if (!hasTradeOff && question.competency === "technical") {
     feedback.push(
-      "Mention trade-offs or why you chose one approach over another.",
+      "Explain why you chose your approach.",
     );
   }
 

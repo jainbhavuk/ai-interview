@@ -8,12 +8,12 @@ export function InterviewReport({ report, onStartOver }) {
           <h2 id="report-title">Interview Report</h2>
           <p>
             Candidate: <strong>{report?.candidateName || 'Unknown'}</strong> | Template:{" "}
-            <strong>{report?.templateLabel || 'Interview'}</strong>
+            <strong>{report?.templateLabel ?? 'Interview'}</strong>
           </p>
         </div>
         <div className={styles.scoreBadge} role="status" aria-live="polite">
           <span>Overall</span>
-          <strong>{report?.overallScore || 0}/5</strong>
+          <strong>{report?.overallScore !== undefined ? Math.round(report?.overallScore) : 0}/5</strong>
         </div>
       </header>
 
@@ -21,8 +21,8 @@ export function InterviewReport({ report, onStartOver }) {
         <div className={styles.panel}>
           <h3>Competency Scores</h3>
           <ul>
-            {report?.competencyScores?.map((item) => (
-              <li key={item?.competency || 'unknown'}>
+            {report?.competencyScores?.map?.((item, index) => (
+              <li key={item?.competency || `competency-${index}`}>
                 <span>{item?.competency || 'Unknown'}</span>
                 <strong>{item?.score || 0}/5</strong>
               </li>
@@ -49,8 +49,8 @@ export function InterviewReport({ report, onStartOver }) {
         <div className={styles.panel}>
           <h3>Strengths</h3>
           <ul>
-            {report?.strengths?.map((item) => (
-              <li key={item || 'strength'}>{item || 'Strength'}</li>
+            {report?.strengths?.map?.((item, index) => (
+              <li key={item || `strength-${index}`}>{item || 'Strength'}</li>
             )) || <li>No strengths identified</li>}
           </ul>
         </div>
@@ -58,8 +58,8 @@ export function InterviewReport({ report, onStartOver }) {
         <div className={styles.panel}>
           <h3>Improvements</h3>
           <ul>
-            {report?.improvements?.map((item) => (
-              <li key={item || 'improvement'}>{item || 'Improvement'}</li>
+            {report?.improvements?.map?.((item, index) => (
+              <li key={item || `improvement-${index}`}>{item || 'Improvement'}</li>
             )) || <li>No improvements needed</li>}
           </ul>
         </div>

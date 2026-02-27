@@ -110,7 +110,7 @@ export function SetupForm({ onStartInterview }) {
         </div>
 
         <div className={styles.row}>
-          <label htmlFor="duration">Duration</label>
+          <label htmlFor="duration">Preferred Interview Duration</label>
           <select
             id="duration"
             value={durationMinutes}

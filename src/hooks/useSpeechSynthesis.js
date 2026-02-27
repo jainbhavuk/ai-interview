@@ -1,34 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const PREFERRED_VOICE_HINTS = [
-  'english india male',
-  'english india',
-  'indian english male',
-  'hinglish',
-  'google india english male',
-  'microsoft indian english male',
-  'microsoft ravi',
-  'microsoft heera',
-  'google hindi male',
-  'hindi male',
-  'indian male',
-  'south indian male',
-  'north indian male',
+  'english united states male',
   'alex',
   'daniel',
-  'aaron',
-  'english united states male',
-  'male',
-  'man',
-  'guy',
-  'david',
-  'mark',
-  'steve',
-  'chris',
-  'john',
-  'michael',
-  'robert',
-  'james',
+  'microsoft david',
+  'microsoft mark',
+  'google us english male',
+  'english india male',
+  'indian english male',
+  'microsoft ravi',
+  'microsoft heera',
 ];
 
 function scoreVoice(voice) {
@@ -36,10 +18,10 @@ function scoreVoice(voice) {
   const lang = String(voice?.lang || "").toLowerCase();
   let score = 0;
 
-  if (lang.startsWith("en-in")) score += 10;
+  if (lang.startsWith("en-us")) score += 10;
+  else if (lang.startsWith("en-in")) score += 9;
   else if (lang.startsWith("en-gb")) score += 4;
   else if (lang.startsWith("en-au")) score += 3;
-  else if (lang.startsWith("en-us")) score += 2;
   else if (lang.startsWith("en")) score += 1;
 
   PREFERRED_VOICE_HINTS.forEach((hint, index) => {
@@ -57,22 +39,34 @@ function selectBestVoice(voices) {
     return null;
   }
 
-  // First try to find Indian English voices
+  // First try to find US English male voices
+  const usVoices = voices.filter(voice => {
+    const name = String(voice?.name || "").toLowerCase();
+    const lang = String(voice?.lang || "").toLowerCase();
+    const preferredHints = ['english united states male', 'alex', 'daniel', 'microsoft david', 'microsoft mark', 'google us english male'];
+    return lang.startsWith("en-us") && preferredHints.some(hint => name.includes(hint));
+  });
+
+  if (usVoices?.length) {
+    return usVoices.slice().sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
+  }
+
+  // Then try to find Indian English male voices
   const indianVoices = voices.filter(voice => {
     const name = String(voice?.name || "").toLowerCase();
     const lang = String(voice?.lang || "").toLowerCase();
-    const indianVoiceHints = ['english india male', 'english india', 'indian english male', 'hinglish', 'google india english male', 'microsoft indian english male', 'microsoft ravi', 'microsoft heera', 'google hindi male', 'hindi male', 'indian male', 'south indian male', 'north indian male', 'male', 'man', 'guy', 'david', 'mark', 'steve', 'chris', 'john', 'michael', 'robert', 'james'];
-    return lang.startsWith("en-in") || indianVoiceHints.some(hint => name.includes(hint));
+    const indianHints = ['english india male', 'indian english male', 'microsoft ravi', 'microsoft heera'];
+    return lang.startsWith("en-in") && indianHints.some(hint => name.includes(hint));
   });
 
   if (indianVoices?.length) {
     return indianVoices.slice().sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
   }
 
-  // If no Indian voices, fall back to any male voice
+  // If no preferred voices, fall back to any male voice
   const maleVoices = voices.filter(voice => {
     const name = String(voice?.name || "").toLowerCase();
-    const maleVoiceHints = ['microsoft guy', 'microsoft david', 'microsoft mark', 'microsoft steve', 'google us english male', 'alex', 'daniel', 'aaron', 'english united states male', 'male', 'man', 'guy', 'david', 'mark', 'steve', 'chris', 'john', 'michael', 'robert', 'james'];
+    const maleVoiceHints = ['microsoft david', 'microsoft mark', 'google us english male', 'alex', 'daniel', 'microsoft ravi', 'microsoft heera'];
     return maleVoiceHints.some(hint => name.includes(hint));
   });
 

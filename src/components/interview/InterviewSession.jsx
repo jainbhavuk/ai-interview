@@ -38,10 +38,18 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       ?.join("") || "U";
 
   useEffect(() => {
-    if (interview?.report) {
-      onComplete(interview?.report);
+    if (interview?.report && !isEnding) {
+      try {
+        setStatusMessage("Interview complete! Generating your report...");
+        if (typeof onComplete === 'function') {
+          onComplete(interview?.report);
+        }
+      } catch (error) {
+        console.error('Error completing interview:', error);
+        setSystemError('Failed to complete interview. Please try again.');
+      }
     }
-  }, [interview?.report, onComplete]);
+  }, [interview?.report, onComplete, isEnding]);
 
   useEffect(() => {
     interviewRef.current = interview;
@@ -283,14 +291,15 @@ export function InterviewSession({ config, onComplete, onAbort }) {
 
       if (result.isComplete) {
         setStatusMessage("Interview complete. Generating your report...");
+        setIsProcessing(false);
         return;
       }
 
-      const evaluation = result.evaluation;
+      const evaluation = result?.evaluation || {};
       let feedbackText = "";
 
-      if (evaluation.feedback && evaluation.feedback.length > 0) {
-        feedbackText = evaluation.feedback[0];
+      if (evaluation?.feedback && Array.isArray(evaluation.feedback) && evaluation.feedback.length > 0) {
+        feedbackText = evaluation.feedback[0] || "";
       } else {
         const neutralResponses = [
           "Good point, let's continue.",
@@ -442,13 +451,6 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   useEffect(() => {
     interviewRef.current = interview;
   }, [interview]);
-
-  useEffect(() => {
-    if (interview?.report) {
-      setStatusMessage("Interview complete! Generating your report...");
-      onComplete(interview?.report);
-    }
-  }, [interview?.report, onComplete]);
 
   if (interview?.isGenerating) {
     return (
