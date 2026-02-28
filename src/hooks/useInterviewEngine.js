@@ -15,6 +15,7 @@ export function useInterviewEngine(config) {
   const allQuestions = useRef([]);
   const stateRef = useRef({ transcript, currentQuestionIndex });
   const dynamicFollowUpsAddedRef = useRef(0);
+  const CONSECUTIVE_SKIP_ATTEMPTS = useRef(0);
 
   useEffect(() => {
     stateRef.current = { transcript, currentQuestionIndex };
@@ -25,6 +26,7 @@ export function useInterviewEngine(config) {
       try {
         setIsGenerating(true);
         dynamicFollowUpsAddedRef.current = 0;
+        CONSECUTIVE_SKIP_ATTEMPTS.current = 0;
         const structure = await generateInterviewStructure(config);
         setInterviewStructure(structure);
 
@@ -86,6 +88,50 @@ export function useInterviewEngine(config) {
 
     const cleanAnswer = String(answer || "").trim();
     if (!cleanAnswer) return { ok: false, message: "Answer cannot be empty" };
+
+    // Check for skip attempts
+    const isSkipAttempt = /^(i don't know|idk|no idea|not sure|skip|pass|can't answer|don't know)$/i.test(cleanAnswer);
+    
+    if (isSkipAttempt) {
+      CONSECUTIVE_SKIP_ATTEMPTS.current += 1;
+      
+      // If user has tried to skip 2+ times, move to next question
+      if (CONSECUTIVE_SKIP_ATTEMPTS.current >= 2) {
+        CONSECUTIVE_SKIP_ATTEMPTS.current = 0; // Reset counter
+        
+        // Add a note about the skipped question
+        const skipEntry = {
+          id: `${currentQuestion?.id || "unknown"}_answer`,
+          questionId: currentQuestion?.id || "unknown",
+          prompt: currentQuestion?.prompt || "",
+          answer: cleanAnswer,
+          competency: currentQuestion?.competency || "general",
+          type: currentQuestion?.type || "main",
+          inputMode,
+          evaluation: { score: 1, feedback: ["Question skipped"], needsFollowUp: false },
+          answeredAt: new Date().toISOString(),
+        };
+        
+        const newTranscript = [
+          ...(stateRef?.current?.transcript || []),
+          skipEntry,
+        ];
+        setTranscript(newTranscript);
+
+        const nextIndex = currentQuestionIndex + 1;
+        setCurrentQuestionIndex(nextIndex);
+
+        if (nextIndex >= allQuestions?.current?.length) {
+          await generateReport(newTranscript);
+          return { ok: true, evaluation: { score: 1, feedback: ["Question skipped"] }, isComplete: true };
+        }
+
+        return { ok: true, evaluation: { score: 1, feedback: ["Moving to next question"] }, isComplete: false };
+      }
+    } else {
+      // Reset counter if user provides a real answer
+      CONSECUTIVE_SKIP_ATTEMPTS.current = 0;
+    }
 
     try {
       const evaluation = await evaluateAnswer(

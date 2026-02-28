@@ -598,9 +598,6 @@ export function InterviewSession({ config, onComplete, onAbort }) {
           <h2 id="voice-interview-title">
             {interview?.templateLabel} Interview
           </h2>
-          <span>
-            {interview?.progress?.current}/{interview?.progress?.total}
-          </span>
         </header>
 
         <div

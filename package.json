@@ -11,7 +11,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "vite"
+    "start": "vite && cd backend && pnpm start"
   },
   "dependencies": {
     "@google/generative-ai": "0.24.1",
