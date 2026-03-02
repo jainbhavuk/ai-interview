@@ -234,9 +234,22 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       speakLine(ack, "wait");
 
       setTimeout(() => {
-        const nextPrompt = interviewRef.current?.currentQuestion?.prompt;
+        const runtime = interviewRef.current;
+        const nextPrompt = runtime?.currentQuestion?.prompt;
+        console.log("[InterviewSession] After intro - checking for next question:", nextPrompt);
+        console.log("[InterviewSession] Runtime state:", {
+          hasCurrentQuestion: !!runtime?.currentQuestion,
+          isComplete: runtime?.isComplete,
+          hasReport: !!runtime?.report
+        });
+        
         if (nextPrompt && !endingRequestedRef.current && !isEnding) {
+          console.log("[InterviewSession] Asking first question after introduction");
           askQuestionByPrompt(nextPrompt);
+        } else {
+          console.error("[InterviewSession] No question available after introduction");
+          setPhase("error");
+          setSystemError("Failed to get first question after introduction.");
         }
       }, 900);
       return;
@@ -285,6 +298,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       }
 
       if (!cleanAnswer || response?.intent === "empty") {
+        console.log("[InterviewSession] Empty response detected, cleanAnswer:", cleanAnswer, "response:", response);
         if (!isEnding) {
           if (isUserThinking) {
             setStatusMessage("Still thinking? Take your time, or let me know if you'd like to skip.");
@@ -550,17 +564,21 @@ function speakLine(line, onEndAction = "listen") {
     }
 
     if (!interview?.currentQuestion) {
+      console.error("[InterviewSession] No current question available");
       setSystemError("Failed to generate interview questions.");
       return;
     }
 
+    console.log("[InterviewSession] Starting interview with first question:", interview?.currentQuestion?.prompt);
     setHasStarted(true);
     setStatusMessage("Starting interview...");
 
     if (interview?.introduction) {
+      console.log("[InterviewSession] Speaking introduction:", interview?.introduction);
       awaitingIntroductionRef.current = true;
       speakLine(interview?.introduction, "listen");
     } else {
+      console.log("[InterviewSession] No introduction, asking first question directly");
       askQuestionByPrompt(
         interview?.currentQuestion?.prompt || "Tell me about your experience.",
       );
