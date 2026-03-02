@@ -334,7 +334,9 @@ export function InterviewSession({ config, onComplete, onAbort }) {
 
       // Give user a moment before next question
       setTimeout(() => {
-        scheduleNextQuestion(1200);
+        if (!endingRequestedRef.current && !isEnding) {
+          scheduleNextQuestion(1200);
+        }
       }, 2000);
     } catch (err) {
       setPhase("error");
@@ -373,7 +375,6 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         interimResults: true,
         language: "en-US",
         // More patient settings for non-native speakers
-        grammars: null, // No strict grammar constraints
         maxAlternatives: 3, // Allow more alternative interpretations
         onEnd: (transcript) => {
           clearTimeout(listeningTimeout);
@@ -413,25 +414,29 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     clearResponseTimer();
 
     if (!voice.isSupported) {
+      // For non-voice browsers, don't auto-transition for wait action
+      if (onEndAction === "wait" && !isEnding && !endingRequestedRef.current) {
+        // Let the setTimeout in handleListeningFinished handle the transition
+        return;
+      }
       if (onEndAction === "listen" && !isEnding && !endingRequestedRef.current)
         startListeningMode();
-      if (onEndAction === "wait" && !isEnding && !endingRequestedRef.current)
-        scheduleNextQuestion();
       return;
     }
 
     const started = voice.speak(line, {
       onEnd: () => {
         if (endingRequestedRef.current) return;
+        // For wait action, don't auto-start anything - let setTimeout handle it
         if (onEndAction === "listen" && !isEnding) startListeningMode();
-        if (onEndAction === "wait" && !isEnding) scheduleNextQuestion();
+        // Remove automatic scheduleNextQuestion for wait action
       },
     });
 
     if (!started) {
       if (endingRequestedRef.current) return;
+      // For failed speech, don't auto-transition for wait action
       if (onEndAction === "listen" && !isEnding) startListeningMode();
-      if (onEndAction === "wait" && !isEnding) scheduleNextQuestion();
     }
   }
 

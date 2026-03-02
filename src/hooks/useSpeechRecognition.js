@@ -128,11 +128,6 @@ export function useSpeechRecognition() {
     if (options.maxAlternatives) {
       recognitionRef.current.maxAlternatives = options.maxAlternatives;
     }
-    
-    // Disable strict grammar for more flexible recognition
-    if (options.grammars === null) {
-      recognitionRef.current.grammars = null;
-    }
 
     onEndRef.current = options.onEnd || null;
     onErrorRef.current = options.onError || null;
