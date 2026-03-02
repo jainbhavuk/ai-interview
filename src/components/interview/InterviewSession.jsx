@@ -176,14 +176,21 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   function scheduleNextQuestion(delay = 1000) {
     if (isEnding || endingRequestedRef.current) return;
 
+    console.log("[InterviewSession] Scheduling next question with delay:", delay);
     clearTurnTimer();
     turnTimerRef.current = window.setTimeout(() => {
       const runtime = interviewRef.current;
-      if (!runtime || runtime.isComplete || runtime.report || isEnding) return;
+      if (!runtime || runtime.isComplete || runtime.report || isEnding) {
+        console.log("[InterviewSession] Skipping next question - interview ended or complete");
+        return;
+      }
       const nextQuestion = runtime.currentQuestion;
       if (nextQuestion && nextQuestion.prompt !== LAST_ASKED_QUESTION_REF.current) {
+        console.log("[InterviewSession] Asking next question:", nextQuestion.prompt);
         LAST_ASKED_QUESTION_REF.current = nextQuestion.prompt;
         askQuestionByPrompt(nextQuestion.prompt);
+      } else {
+        console.log("[InterviewSession] No new question available or duplicate question");
       }
     }, delay);
   }
@@ -205,12 +212,13 @@ export function InterviewSession({ config, onComplete, onAbort }) {
 
     // Avoid processing if speech recognition emitted an error (e.g. permissions or no-speech)
     if (speech?.error || phase === "error") {
-      console.log("[InterviewSession] Skipping analysis due to existing error state");
+      console.log("[InterviewSession] Skipping analysis due to existing error state:", speech?.error);
       setIsProcessing(false);
       return;
     }
 
     if (awaitingIntroductionRef.current) {
+      console.log("[InterviewSession] Processing introduction response");
       awaitingIntroductionRef.current = false;
       setSystemError("");
       setPhase("processing");
@@ -226,7 +234,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       speakLine(ack, "wait");
 
       setTimeout(() => {
-        const nextPrompt = runtime?.currentQuestion?.prompt;
+        const nextPrompt = interviewRef.current?.currentQuestion?.prompt;
         if (nextPrompt && !endingRequestedRef.current && !isEnding) {
           askQuestionByPrompt(nextPrompt);
         }
@@ -235,6 +243,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     }
 
     const cleanAnswer = String(answer || "").trim();
+    console.log("[InterviewSession] Processing answer:", cleanAnswer);
 
     // Use AI to determine how to handle the response
     try {
@@ -244,6 +253,8 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         interview?.transcript || [],
         config?.yoe,
       );
+
+      console.log("[InterviewSession] AI response analysis:", response);
 
       if (response?.intent === "thinking") {
         setIsUserThinking(true);
@@ -277,12 +288,12 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         if (!isEnding) {
           if (isUserThinking) {
             setStatusMessage("Still thinking? Take your time, or let me know if you'd like to skip.");
-            speakLine("Still thinking? That's perfectly fine. Take your time, or let me know if you'd like me to repeat the question or move on to the next one.", "listen");
           } else {
-            setStatusMessage("No response detected. Please try again.");
-            speakLine(response?.response || "I didn't catch that. Could you please answer?", "listen");
+            setStatusMessage("I didn't catch that. Could you please share your thoughts?");
           }
+          speakLine("I didn't quite catch that. Could you please try again?", "listen");
         }
+        setIsProcessing(false);
         return;
       }
 
@@ -302,16 +313,22 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     }
 
     try {
+      console.log("[InterviewSession] Submitting answer to runtime:", cleanAnswer);
       const result = await runtime.submitAnswer(cleanAnswer, "voice");
       speech.resetTranscript();
 
+      console.log("[InterviewSession] Runtime submitAnswer result:", result);
+
       if (!result.ok) {
+        console.error("[InterviewSession] Runtime submitAnswer failed:", result);
         setPhase("error");
         setSystemError(result.message);
+        setIsProcessing(false);
         return;
       }
 
       if (result.isComplete) {
+        console.log("[InterviewSession] Interview is complete");
         setStatusMessage("Interview complete. Generating your report...");
         setIsProcessing(false);
         return;
@@ -329,19 +346,21 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         "That gives me a good picture of your approach.",
       ];
       const feedbackText = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
+      console.log("[InterviewSession] Speaking acknowledgment:", feedbackText);
 
       speakLine(feedbackText, "wait");
 
       // Give user a moment before next question
       setTimeout(() => {
         if (!endingRequestedRef.current && !isEnding) {
+          console.log("[InterviewSession] Scheduling next question");
           scheduleNextQuestion(1200);
         }
       }, 2000);
     } catch (err) {
+      console.error("[InterviewSession] submitAnswer error:", err);
       setPhase("error");
       setSystemError("Something went wrong while processing your answer.");
-      console.error("[InterviewSession] submitAnswer error:", err);
     } finally {
       setIsProcessing(false);
     }
@@ -350,8 +369,11 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   function startListeningMode() {
     if (isEnding || endingRequestedRef.current || voice.isSpeaking) return;
     
+    console.log("[InterviewSession] Starting listening mode");
+    
     try {
       if (speech.isListening) {
+        console.log("[InterviewSession] Stopping existing speech recognition");
         speech.stopListening();
       }
 
@@ -362,7 +384,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       // Add safety timeout to prevent getting stuck
       const listeningTimeout = setTimeout(() => {
         if (speech.isListening && phase === 'listening') {
-          console.warn('Listening mode stuck, forcing restart');
+          console.warn('[InterviewSession] Listening mode stuck, forcing restart');
           speech.stopListening();
           setTimeout(() => {
             startListeningMode();
@@ -378,10 +400,12 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         maxAlternatives: 3, // Allow more alternative interpretations
         onEnd: (transcript) => {
           clearTimeout(listeningTimeout);
+          console.log("[InterviewSession] Speech recognition ended with transcript:", transcript);
           handleListeningFinished(transcript);
         },
         onError: (message) => {
           clearTimeout(listeningTimeout);
+          console.error("[InterviewSession] Speech recognition error:", message);
           if (message.includes("already started")) {
             return;
           }
@@ -391,12 +415,15 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       });
 
       if (started) {
+        console.log("[InterviewSession] Speech recognition started successfully");
         setPhase("listening");
         setStatusMessage("Listening...");
         startResponseTimer();
+      } else {
+        console.error("[InterviewSession] Failed to start speech recognition");
       }
     } catch (error) {
-      console.error("Speech recognition error:", error);
+      console.error("[InterviewSession] Speech recognition error:", error);
       setPhase("error");
       setSystemError("");
       setStatusMessage("Listening...");
@@ -404,9 +431,47 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     }
   }
 
-  function speakLine(line, onEndAction = "listen") {
+function askQuestionByPrompt(prompt) {
+    if (!prompt || isEnding || endingRequestedRef.current) return;
+
+    console.log("[InterviewSession] Asking question by prompt:", prompt);
+    setPhase("ai-speaking");
+    setStatusMessage("Interviewer speaking...");
+    setAiSubtitle(prompt);
+    clearResponseTimer();
+    clearTurnTimer();
+
+    if (!voice.isSupported) {
+      console.log("[InterviewSession] Voice not supported, using text fallback for question");
+      const readingTime = Math.max(prompt.length * 80, 3000);
+      setTimeout(() => {
+        if (endingRequestedRef.current) return;
+        startListeningMode();
+      }, readingTime);
+      return;
+    }
+
+    const started = voice.speak(prompt, {
+      onEnd: () => {
+        console.log("[InterviewSession] Question speech finished, starting listening");
+        if (endingRequestedRef.current) return;
+        startListeningMode();
+      },
+    });
+
+    if (!started) {
+      console.error("[InterviewSession] Failed to start question speech");
+      if (endingRequestedRef.current) return;
+      startListeningMode();
+    } else {
+      console.log("[InterviewSession] Question speech started successfully");
+    }
+  }
+
+function speakLine(line, onEndAction = "listen") {
     if (!line || isEnding || endingRequestedRef.current) return;
 
+    console.log("[InterviewSession] Speaking line:", line, "with action:", onEndAction);
     setSystemError("");
     setPhase("ai-speaking");
     setStatusMessage("Interviewer speaking...");
@@ -414,29 +479,36 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     clearResponseTimer();
 
     if (!voice.isSupported) {
-      // For non-voice browsers, don't auto-transition for wait action
-      if (onEndAction === "wait" && !isEnding && !endingRequestedRef.current) {
-        // Let the setTimeout in handleListeningFinished handle the transition
-        return;
-      }
-      if (onEndAction === "listen" && !isEnding && !endingRequestedRef.current)
-        startListeningMode();
+      console.log("[InterviewSession] Voice not supported, using text fallback");
+      // For non-voice browsers, simulate speech timing
+      const readingTime = Math.max(line.length * 80, 2000);
+      setTimeout(() => {
+        if (endingRequestedRef.current) return;
+        if (onEndAction === "listen" && !isEnding && !endingRequestedRef.current)
+          startListeningMode();
+        if (onEndAction === "wait" && !isEnding && !endingRequestedRef.current) {
+          // Do nothing - let setTimeout handle the transition
+        }
+      }, readingTime);
       return;
     }
 
     const started = voice.speak(line, {
       onEnd: () => {
+        console.log("[InterviewSession] Voice synthesis finished for:", line);
         if (endingRequestedRef.current) return;
-        // For wait action, don't auto-start anything - let setTimeout handle it
         if (onEndAction === "listen" && !isEnding) startListeningMode();
-        // Remove automatic scheduleNextQuestion for wait action
+        // For wait action, don't do anything here - let setTimeout handle it
       },
     });
 
     if (!started) {
+      console.error("[InterviewSession] Failed to start voice synthesis for:", line);
       if (endingRequestedRef.current) return;
-      // For failed speech, don't auto-transition for wait action
       if (onEndAction === "listen" && !isEnding) startListeningMode();
+      // For wait action, do nothing - let setTimeout handle it
+    } else {
+      console.log("[InterviewSession] Voice synthesis started successfully");
     }
   }
 
@@ -469,12 +541,6 @@ export function InterviewSession({ config, onComplete, onAbort }) {
     }, 45000);
 
     interview.endInterviewNow();
-  }
-
-  function askQuestionByPrompt(prompt) {
-    if (!prompt) return;
-    speech.resetTranscript();
-    speakLine(prompt, "listen");
   }
 
   function handleStartInterview() {
