@@ -57,8 +57,9 @@ export function useSpeechRecognition() {
         const transcript = result[0]?.transcript || "";
 
         if (result.isFinal) {
-          // Filter out filler words from final transcript
-          const cleanTranscript = transcript.replace(/\b(umm|uhm|hmm|uh|er|ah|like|you know)\b/gi, '').trim();
+          // Keep filler words for non-native speakers - they're natural thinking sounds
+          // Only remove obvious errors, not natural speech patterns
+          const cleanTranscript = transcript.replace(/\b(repeated|duplicate|same word)\b/gi, '').trim();
           nextFinalText += `${cleanTranscript} `;
         } else {
           nextInterimText += `${transcript} `;
@@ -122,6 +123,17 @@ export function useSpeechRecognition() {
     recognitionRef.current.continuous = Boolean(options.continuous);
     recognitionRef.current.interimResults = options.interimResults ?? true;
     recognitionRef.current.lang = options.lang || "en-US";
+    
+    // More patient settings for non-native speakers
+    if (options.maxAlternatives) {
+      recognitionRef.current.maxAlternatives = options.maxAlternatives;
+    }
+    
+    // Disable strict grammar for more flexible recognition
+    if (options.grammars === null) {
+      recognitionRef.current.grammars = null;
+    }
+
     onEndRef.current = options.onEnd || null;
     onErrorRef.current = options.onError || null;
 
@@ -133,9 +145,8 @@ export function useSpeechRecognition() {
     try {
       recognitionRef.current.start();
       return true;
-    } catch {
-      // Don't show common speech recognition errors to user
-      setError("");
+    } catch (error) {
+      console.error("Speech recognition start failed:", error);
       return false;
     }
   }

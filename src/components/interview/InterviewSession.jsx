@@ -26,6 +26,8 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   const interviewRef = useRef(null);
   const stopListeningRef = useRef(() => {});
   const cancelVoiceRef = useRef(() => {});
+  const INTRO_NUDGE_COUNT_REF = useRef(0);
+  const LAST_ASKED_QUESTION_REF = useRef(null);
 
   const interview = useInterviewEngine(config);
   const speech = useSpeechRecognition();
@@ -111,6 +113,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
 
   function startResponseTimer() {
     clearResponseTimer();
+    // Much more relaxed timing for non-native speakers
     responseTimeoutRef.current = window.setTimeout(() => {
       // Check if user might be thinking (long pause)
       if (!isUserThinking && phase === 'listening') {
@@ -118,14 +121,14 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         setThinkingStartTime(Date.now());
         setStatusMessage("Take your time to think...");
         
-        // Give more time for thinking
+        // Give much more time for thinking - non-native speakers need extra time
         responseTimeoutRef.current = window.setTimeout(() => {
           handleResponseTimeout();
-        }, 20000); // Increased to 20 seconds to avoid premature analysis
+        }, 30000); // 30 seconds for thinking time
       } else {
         handleResponseTimeout();
       }
-    }, 12000); // Increased from 8 to 12 seconds to allow natural pauses
+    }, 20000); // 20 seconds before considering thinking (was 12)
   }
 
   async function handleResponseTimeout() {
@@ -172,13 +175,14 @@ export function InterviewSession({ config, onComplete, onAbort }) {
 
   function scheduleNextQuestion(delay = 1000) {
     if (isEnding || endingRequestedRef.current) return;
-    
+
     clearTurnTimer();
     turnTimerRef.current = window.setTimeout(() => {
       const runtime = interviewRef.current;
       if (!runtime || runtime.isComplete || runtime.report || isEnding) return;
       const nextQuestion = runtime.currentQuestion;
-      if (nextQuestion) {
+      if (nextQuestion && nextQuestion.prompt !== LAST_ASKED_QUESTION_REF.current) {
+        LAST_ASKED_QUESTION_REF.current = nextQuestion.prompt;
         askQuestionByPrompt(nextQuestion.prompt);
       }
     }, delay);
@@ -313,16 +317,16 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         return;
       }
 
-      // Use simple acknowledgments instead of AI feedback for voice
+      // Use empathetic human-like responses instead of AI feedback for voice
       const acknowledgments = [
-        "Okay",
-        "Great", 
-        "Got it",
-        "Thanks",
-        "Good",
-        "Alright",
-        "Understood",
-        "Perfect"
+        "I see, that sounds like quite a journey.",
+        "That must have been quite challenging for you.",
+        "I understand, that takes real dedication.",
+        "That's really interesting, tell me more.",
+        "I can imagine that wasn't easy.",
+        "That sounds like a valuable experience.",
+        "I appreciate you sharing that with me.",
+        "That gives me a good picture of your approach.",
       ];
       const feedbackText = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
 
@@ -368,6 +372,9 @@ export function InterviewSession({ config, onComplete, onAbort }) {
         continuous: false,
         interimResults: true,
         language: "en-US",
+        // More patient settings for non-native speakers
+        grammars: null, // No strict grammar constraints
+        maxAlternatives: 3, // Allow more alternative interpretations
         onEnd: (transcript) => {
           clearTimeout(listeningTimeout);
           handleListeningFinished(transcript);
@@ -576,7 +583,6 @@ export function InterviewSession({ config, onComplete, onAbort }) {
               type="button"
               className={styles.secondaryButton}
               onClick={handleEndInterview}
-              disabled
             >
               End Interview
             </button>
@@ -663,7 +669,6 @@ export function InterviewSession({ config, onComplete, onAbort }) {
             type="button"
             className={styles.secondaryButton}
             onClick={handleEndInterview}
-            disabled={isProcessing || interview?.isComplete}
           >
             End Interview
           </button>

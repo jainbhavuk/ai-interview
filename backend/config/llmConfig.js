@@ -5,7 +5,7 @@ function createLLM() {
     apiKey: process.env.OPENAI_API_KEY,
     model: 'gpt-4.1',
     maxTokens: 10000,
-    temperature: 0.6,
+    temperature: 0.8,
   });
 }
 
