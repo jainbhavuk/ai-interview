@@ -192,9 +192,19 @@ export function InterviewSession({ config, onComplete, onAbort }) {
       runtime.report ||
       isProcessing ||
       isEnding ||
-      endingRequestedRef.current
+      endingRequestedRef.current ||
+      voice.isSpeaking
     )
       return;
+
+    setIsProcessing(true);
+
+    // Avoid processing if speech recognition emitted an error (e.g. permissions or no-speech)
+    if (speech?.error || phase === "error") {
+      console.log("[InterviewSession] Skipping analysis due to existing error state");
+      setIsProcessing(false);
+      return;
+    }
 
     if (awaitingIntroductionRef.current) {
       awaitingIntroductionRef.current = false;
@@ -332,7 +342,7 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   }
 
   function startListeningMode() {
-    if (isEnding || endingRequestedRef.current) return;
+    if (isEnding || endingRequestedRef.current || voice.isSpeaking) return;
     
     try {
       if (speech.isListening) {

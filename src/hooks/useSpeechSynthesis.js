@@ -89,12 +89,15 @@ function selectBestVoice(voices) {
  * }}
  */
 export function useSpeechSynthesis() {
+  const [isSupported, setIsSupported] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState("");
   const [voices, setVoices] = useState([]);
   const utteranceRef = useRef(null);
+  const ON_END_CALLBACK_REF = useRef(null);
+  const IS_PROCESSING_REF = useRef(false);
 
-  const isSupported = useMemo(() => {
+  const isSupportedMemo = useMemo(() => {
     if (typeof window === "undefined") {
       return false;
     }
@@ -103,7 +106,11 @@ export function useSpeechSynthesis() {
   }, []);
 
   useEffect(() => {
-    if (!isSupported) {
+    setIsSupported(isSupportedMemo);
+  }, [isSupportedMemo]);
+
+  useEffect(() => {
+    if (!isSupportedMemo) {
       return undefined;
     }
 
@@ -118,7 +125,7 @@ export function useSpeechSynthesis() {
     return () => {
       window?.speechSynthesis?.removeEventListener("voiceschanged", syncVoices);
     };
-  }, [isSupported]);
+  }, [isSupportedMemo]);
 
   useEffect(() => {
     return () => {
@@ -138,10 +145,13 @@ export function useSpeechSynthesis() {
 
     window?.speechSynthesis?.cancel();
     setIsSpeaking(false);
+    IS_PROCESSING_REF.current = false;
+    utteranceRef.current = null;
+    ON_END_CALLBACK_REF.current = null;
   }
 
   function speak(text, options = {}) {
-    if (!isSupported) {
+    if (!isSupported || IS_PROCESSING_REF.current) {
       return false;
     }
 
@@ -150,7 +160,9 @@ export function useSpeechSynthesis() {
       return false;
     }
 
+    // Cancel any ongoing speech
     cancel();
+    IS_PROCESSING_REF.current = true;
     setError("");
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
@@ -168,20 +180,39 @@ export function useSpeechSynthesis() {
 
     utterance.onend = () => {
       setIsSpeaking(false);
+      IS_PROCESSING_REF.current = false;
       if (typeof options.onEnd === "function") {
         options.onEnd();
       }
     };
 
-    utterance.onerror = () => {
-      // Don't show speech synthesis errors to user
+    utterance.onerror = (event) => {
+      console.error("Speech synthesis error:", event);
       setError("");
       setIsSpeaking(false);
+      IS_PROCESSING_REF.current = false;
+      // Always call onEnd to prevent getting stuck, even on errors
+      if (typeof options.onEnd === "function") {
+        options.onEnd();
+      }
     };
 
     utteranceRef.current = utterance;
-    window?.speechSynthesis?.speak(utterance);
-    return true;
+    ON_END_CALLBACK_REF.current = options.onEnd || null;
+    
+    try {
+      window?.speechSynthesis?.speak(utterance);
+      return true;
+    } catch (error) {
+      console.error("Speech synthesis failed:", error);
+      setError("");
+      setIsSpeaking(false);
+      IS_PROCESSING_REF.current = false;
+      if (typeof options.onEnd === "function") {
+        options.onEnd();
+      }
+      return false;
+    }
   }
 
   // Generate random number in range for voice variation
