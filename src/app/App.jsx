@@ -32,7 +32,7 @@ export default function App() {
         <div className={styles.heroSection}>
           <h1 className={styles.heroTitle}>Knoq</h1>
           <p className={styles.heroSubtitle}>
-            Advanced Interview Intelligence System
+            Tailored mock interviews for better prep!
           </p>
           <SetupForm onStartInterview={handleStartInterview} />
         </div>

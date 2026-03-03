@@ -1,106 +1,139 @@
 .card {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border: 1px solid #334155;
+  background:
+    radial-gradient(900px 520px at 15% 10%, rgba(183, 255, 242, 0.14), transparent 60%),
+    radial-gradient(700px 520px at 80% 0%, rgba(124, 246, 255, 0.07), transparent 64%),
+    linear-gradient(180deg, var(--bg-elev-1) 0%, var(--bg) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.20);
   border-radius: 20px;
   padding: 32px;
   margin: 0;
   box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    0 40px 120px rgba(0, 0, 0, 0.65),
+    0 18px 40px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.03);
   width: 100%;
   box-sizing: border-box;
+  backdrop-filter: blur(10px);
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (max-width: 720px), (pointer: coarse) {
+  .card {
+    backdrop-filter: none;
+  }
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: center;
+  align-items: center;
   gap: 16px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .header h2 {
   margin: 0 0 8px;
-  color: #f1f5f9;
+  color: var(--text);
   font-size: 1.8rem;
 }
 
 .header p {
   margin: 0;
-  color: #94a3b8;
+  color: var(--muted);
 }
 
 .scoreBadge {
-  border: 1px solid #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(52, 227, 193, 0.42);
+  background:
+    radial-gradient(180px 140px at 40% 10%, rgba(124, 246, 255, 0.10), transparent 65%),
+    rgba(52, 227, 193, 0.08);
   border-radius: 12px;
   padding: 12px 16px;
   display: grid;
   gap: 4px;
-  text-align: right;
+  place-items: center;
+  text-align: center;
   min-width: 80px;
+}
+
+.scoreBadge strong {
+  line-height: 1.1;
 }
 
 .scoreBadge span {
   font-size: 0.8rem;
-  color: #93c5fd;
+  color: rgba(232, 237, 242, 0.82);
 }
 
 .scoreBadge strong {
   font-size: 1.2rem;
-  color: #3b82f6;
+  color: #b7fff2;
 }
 
 .grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   margin-bottom: 24px;
+  justify-content: center;
+  justify-items: center;
+  width: 100%;
 }
 
 .panel {
-  border: 1px solid #334155;
+  border: 1px solid rgba(148, 163, 184, 0.20);
   border-radius: 12px;
   padding: 16px;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(255, 255, 255, 0.02);
+  width: min(100%, 560px);
+  justify-self: center;
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .panel h3 {
   margin: 0 0 12px;
   font-size: 1rem;
-  color: #f1f5f9;
+  color: var(--text);
 }
 
 .panel ul {
   margin: 0;
   padding-left: 18px;
-  color: #e2e8f0;
+  color: var(--text);
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
 .panel li {
   margin-bottom: 6px;
-  color: #e2e8f0;
+  color: var(--text);
   line-height: 1.4;
 }
 
 .panel p {
   margin: 0 0 8px;
-  color: #e2e8f0;
+  color: var(--text);
   line-height: 1.4;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
 .panel strong {
-  color: #93c5fd;
+  color: #a7f3e2;
 }
 
 .primaryButton {
   border: none;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
   color: #ffffff;
   border-radius: 12px;
   padding: 14px 24px;
@@ -120,9 +153,9 @@
 }
 
 .primaryButton:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--accent-strong) 0%, #047857 100%);
   transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.22);
 }
 
 @media (max-width: 860px) {
@@ -138,7 +171,7 @@
 
   .header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     text-align: center;
   }
 
@@ -188,5 +221,7 @@
   .primaryButton {
     padding: 12px 20px;
     font-size: 0.9rem;
+    width: 100%;
+    max-width: 420px;
   }
 }

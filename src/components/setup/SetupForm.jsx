@@ -16,6 +16,8 @@ export function SetupForm({ onStartInterview }) {
   const [candidateName, setCandidateName] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(20);
   const [resumeText, setResumeText] = useState("");
+  const [resumeFileName, setResumeFileName] = useState("");
+  const [isResumeUploading, setIsResumeUploading] = useState(false);
   const [jdText, setJdText] = useState("");
   const [domain, setDomain] = useState("Frontend");
   const [yoe, setYoe] = useState("1 year");
@@ -26,6 +28,12 @@ export function SetupForm({ onStartInterview }) {
     if (!file) return;
 
     try {
+      if (target === "resume") {
+        setIsResumeUploading(true);
+        setResumeFileName(file?.name || "");
+        // Prevent showing stale "uploaded" UI while a new resume is being parsed.
+        setResumeText("");
+      }
       const { text } = await readTextFile(file);
       if (target === "resume") {
         setResumeText(text);
@@ -35,6 +43,10 @@ export function SetupForm({ onStartInterview }) {
       setError("");
     } catch (uploadError) {
       setError(uploadError.message);
+    } finally {
+      if (target === "resume") {
+        setIsResumeUploading(false);
+      }
     }
   }
 
@@ -46,8 +58,8 @@ export function SetupForm({ onStartInterview }) {
       return;
     }
 
-    if (!resumeText.trim() && !jdText.trim()) {
-      setError("Please provide either a resume or a job description.");
+    if (!resumeText.trim()) {
+      setError("Resume is required.");
       return;
     }
 
@@ -61,6 +73,9 @@ export function SetupForm({ onStartInterview }) {
       yoe,
     });
   }
+
+  const canStartInterview =
+    !!candidateName.trim() && !!resumeText.trim() && !isResumeUploading;
 
   return (
     <section className={styles.card}>
@@ -130,12 +145,14 @@ export function SetupForm({ onStartInterview }) {
             onChange={(event) => setJdText(event.target.value)}
             placeholder="Paste the job description here..."
             rows={4}
-            required={!resumeText.trim()}
           />
         </div>
 
         <div className={styles.row}>
-          <label htmlFor="resumeFile">Resume (PDF only, max 1MB)</label>
+          <label htmlFor="resumeFile">
+            Resume <span className={styles.requiredStar}>*</span> (PDF only, max
+            1MB)
+          </label>
           <div className={styles.fileWrapper}>
             <input
               id="resumeFile"
@@ -143,25 +160,43 @@ export function SetupForm({ onStartInterview }) {
               accept=".pdf"
               onChange={(event) => handleFileUpload(event, "resume")}
               className={styles.fileInput}
+              disabled={isResumeUploading}
             />
             <label htmlFor="resumeFile" className={styles.fileButton}>
-              Choose Resume File
+              {isResumeUploading ? "Uploading..." : "Choose Resume File"}
             </label>
             <span className={styles.fileName}>
-              {resumeText ? "File uploaded ✓" : "No file chosen"}
+              {isResumeUploading
+                ? "Uploading..."
+                : resumeText
+                  ? "Resume uploaded ✓"
+                  : "No file chosen"}
             </span>
           </div>
-          {resumeText && (
-            <div className={styles.filePreview}>
-              Resume uploaded ✓ ({resumeText.length} characters)
+          {!isResumeUploading && !resumeText && (
+            <div className={styles.helperText}>Resume is required to start.</div>
+          )}
+          {isResumeUploading && (
+            <div className={styles.filePreviewUploading} aria-live="polite">
+              Uploading resume{resumeFileName ? `: ${resumeFileName}` : ""}...
+            </div>
+          )}
+          {!isResumeUploading && resumeText && (
+            <div className={styles.filePreview} aria-live="polite">
+              Resume uploaded ✓{resumeFileName ? ` (${resumeFileName})` : ""}
             </div>
           )}
         </div>
 
         {error && <div className={styles.error}>{error}</div>}
 
-        <button type="submit" className={styles.primaryButton}>
-          Start Interview
+        <button
+          type="submit"
+          className={styles.primaryButton}
+          disabled={!canStartInterview}
+          title={!resumeText.trim() ? "Resume is required to start." : ""}
+        >
+          {isResumeUploading ? "Uploading Resume..." : "Start Interview"}
         </button>
       </form>
     </section>

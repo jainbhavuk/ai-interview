@@ -1,10 +1,13 @@
 .fullScreen {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #020617 100%);
+  background:
+    radial-gradient(1100px 650px at 18% 8%, var(--ambient-1), transparent 58%),
+    radial-gradient(900px 600px at 92% 24%, var(--ambient-2), transparent 60%),
+    radial-gradient(700px 520px at 55% 0%, var(--accent-pop-soft), transparent 62%),
+    linear-gradient(160deg, var(--bg) 0%, #0b1119 52%, #070b10 100%);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 20px;
 }
 
 .heroSection {
@@ -16,30 +19,20 @@
 .heroTitle {
   font-size: 4rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+  background: linear-gradient(135deg, #d6fff7 0%, var(--accent-2) 30%, var(--accent) 70%, var(--accent-pop) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 16px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  animation: glow 3s ease-in-out infinite alternate;
+  margin-bottom: 10px;
+  letter-spacing: -0.02em;
   line-height: 1.1;
-}
-
-@keyframes glow {
-  from {
-    filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
-  }
-  to {
-    filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.5));
-  }
+  filter: drop-shadow(0 10px 40px rgba(52, 227, 193, 0.10));
 }
 
 .heroSubtitle {
   font-size: 1.2rem;
-  color: #94a3b8;
-  margin-bottom: 48px;
+  color: var(--muted);
+  margin-bottom: 28px;
   letter-spacing: 0.025em;
   font-weight: 300;
 }
@@ -51,18 +44,25 @@
 
   .heroSubtitle {
     font-size: 1rem;
-    margin-bottom: 32px;
+    margin-bottom: 20px;
   }
 }
 
 @media (max-width: 480px) {
   .heroTitle {
     font-size: 2rem;
+    /* Avoid occasional mobile font softening from filter compositing */
+    filter: none;
   }
 
   .heroSubtitle {
     font-size: 0.9rem;
   }
+
+  .fullScreen {
+    padding: 32px 16px 24px;
+  }
+
 }
 
 .shell {
@@ -78,16 +78,24 @@
   max-width: 100%;
   padding: 24px 20px 32px;
   min-height: 100vh;
-  background: #020617;
+  background:
+    radial-gradient(900px 620px at 12% 12%, rgba(183, 255, 242, 0.14), transparent 62%),
+    radial-gradient(800px 520px at 88% 18%, rgba(52, 227, 193, 0.12), transparent 64%),
+    radial-gradient(700px 520px at 55% -10%, rgba(124, 246, 255, 0.08), transparent 65%),
+    linear-gradient(180deg, var(--bg) 0%, #080c12 100%);
+  border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 14px;
   overflow-x: hidden;
+  box-shadow:
+    0 40px 120px rgba(0, 0, 0, 0.65),
+    0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .skipLink {
   position: absolute;
   top: -48px;
   left: 12px;
-  background: #111827;
+  background: var(--bg-elev-1);
   color: #ffffff;
   padding: 10px 12px;
   border-radius: 8px;
@@ -121,7 +129,7 @@
 
 .header p {
   margin: 0;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .main {
@@ -136,35 +144,38 @@
 .interviewTitle {
   margin: 0;
   font-size: 1rem;
-  color: #e5e7eb;
+  color: var(--text);
   letter-spacing: 0.04em;
 }
 
 .secondaryButton {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #111827;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
   border-radius: 10px;
   padding: 10px 14px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
   min-height: 44px;
   touch-action: manipulation;
   white-space: nowrap;
+  backdrop-filter: blur(8px);
 }
 
 .secondaryButton:hover {
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(148, 163, 184, 0.32);
+  transform: translateY(-1px);
 }
 
 .headerInterview .secondaryButton {
-  border-color: #334155;
-  background: #0f172a;
-  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
 }
 
 .headerInterview .secondaryButton:hover {
-  background: #1e293b;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 @media (max-width: 800px) {
@@ -210,7 +221,7 @@
   }
 
   .shellInterview {
-    padding: 8px 6px 12px;
+    padding: 18px 10px 16px;
     border-radius: 8px;
   }
 

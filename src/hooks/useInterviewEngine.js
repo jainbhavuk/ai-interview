@@ -5,6 +5,53 @@ import {
   generateFinalReport,
 } from "../services/ai/interviewAI";
 
+function normalizeQuestionItem(item, defaults = {}) {
+  if (!item) return null;
+  const prompt = String(item?.prompt || "").trim();
+  if (!prompt) return null;
+  return {
+    id: item?.id,
+    prompt,
+    competency: item?.competency ?? defaults?.competency,
+    type: item?.type || defaults?.type || "main",
+    parentQuestion: item?.parentQuestion ?? defaults?.parentQuestion,
+  };
+}
+
+function flattenQuestions(structure) {
+  const flat = [];
+  const questions = Array.isArray(structure?.questions) ? structure.questions : [];
+  questions.forEach((q) => {
+    // Backend may already return a flat list (with `type`) OR a nested list with followUps.
+    const main = normalizeQuestionItem(q, { type: "main" });
+    if (main) flat.push(main);
+
+    if (Array.isArray(q?.followUps) && q.followUps.length > 0) {
+      q.followUps.forEach((fu) => {
+        const follow = normalizeQuestionItem(fu, {
+          competency: q?.competency,
+          type: "followup",
+          parentQuestion: main?.prompt || q?.prompt,
+        });
+        if (follow) flat.push(follow);
+      });
+    }
+  });
+
+  // De-dupe by normalized prompt to avoid accidental repeats from model output
+  const seen = new Set();
+  return flat.filter((item) => {
+    const key = String(item?.prompt || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+    if (!key) return false;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function useInterviewEngine(config) {
   const [interviewStructure, setInterviewStructure] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -16,6 +63,24 @@ export function useInterviewEngine(config) {
   const stateRef = useRef({ transcript, currentQuestionIndex });
   const dynamicFollowUpsAddedRef = useRef(0);
   const CONSECUTIVE_SKIP_ATTEMPTS = useRef(0);
+  const RETRY_STATE_REF = useRef({ questionId: null, count: 0 });
+
+  function getMainCompletionStats(conversation) {
+    const transcriptItems = Array.isArray(conversation) ? conversation : [];
+    const totalMain = (allQuestions?.current || []).filter((q) => q?.type === "main")
+      .length;
+
+    const answeredMain = transcriptItems.filter((t) => {
+      if (!t) return false;
+      if (t.skipped) return false;
+      if (t.type !== "main") return false;
+      const answer = String(t.answer || "").trim();
+      return Boolean(answer);
+    }).length;
+
+    const ratio = totalMain > 0 ? answeredMain / totalMain : 0;
+    return { answeredMain, totalMain, ratio };
+  }
 
   useEffect(() => {
     stateRef.current = { transcript, currentQuestionIndex };
@@ -29,27 +94,7 @@ export function useInterviewEngine(config) {
         CONSECUTIVE_SKIP_ATTEMPTS.current = 0;
         const structure = await generateInterviewStructure(config);
         setInterviewStructure(structure);
-
-        const flatQuestions = [];
-        structure?.questions?.forEach((q) => {
-          flatQuestions?.push({
-            id: q?.id,
-            prompt: q?.prompt,
-            competency: q?.competency,
-            type: "main",
-          });
-          q?.followUps?.forEach((fu) => {
-            flatQuestions?.push({
-              id: fu?.id,
-              prompt: fu?.prompt,
-              competency: q?.competency,
-              type: "followup",
-              parentQuestion: q?.prompt,
-            });
-          });
-        });
-
-        allQuestions.current = flatQuestions;
+        allQuestions.current = flattenQuestions(structure);
       } catch (error) {
         console.error("Failed to generate interview:", error);
         // Fallback questions
@@ -89,6 +134,10 @@ export function useInterviewEngine(config) {
     const cleanAnswer = String(answer || "").trim();
     if (!cleanAnswer) return { ok: false, message: "Answer cannot be empty" };
 
+    const isFirstAnsweredQuestion = (stateRef?.current?.transcript || []).length === 0;
+    const wordCount = cleanAnswer.split(/\s+/).filter(Boolean).length;
+    const MIN_FIRST_ANSWER_WORDS = 50;
+
     // Check for skip attempts
     const isSkipAttempt = /^(i don't know|idk|no idea|not sure|skip|pass|can't answer|don't know)$/i.test(cleanAnswer);
     
@@ -107,6 +156,7 @@ export function useInterviewEngine(config) {
           answer: cleanAnswer,
           competency: currentQuestion?.competency || "general",
           type: currentQuestion?.type || "main",
+          skipped: true,
           inputMode,
           evaluation: { score: 1, feedback: ["Question skipped"], needsFollowUp: false },
           answeredAt: new Date().toISOString(),
@@ -139,6 +189,42 @@ export function useInterviewEngine(config) {
         cleanAnswer,
         stateRef?.current?.transcript || [],
       );
+
+      const isLowQualityForFirst =
+        isFirstAnsweredQuestion && wordCount < MIN_FIRST_ANSWER_WORDS;
+      const needsRetry =
+        isLowQualityForFirst ||
+        evaluation?.isRelevant === false ||
+        evaluation?.needsElaboration === true;
+
+      if (needsRetry) {
+        const qid = currentQuestion?.id || "unknown";
+        if (RETRY_STATE_REF.current.questionId !== qid) {
+          RETRY_STATE_REF.current = { questionId: qid, count: 1 };
+        } else {
+          RETRY_STATE_REF.current = {
+            questionId: qid,
+            count: (RETRY_STATE_REF.current.count || 0) + 1,
+          };
+        }
+
+        const fallbackPrompt = isLowQualityForFirst
+          ? "Could you describe your experience in more detail? Aim for around 3–5 sentences."
+          : "Could you add a bit more detail and keep it specific to the question?";
+
+        // Don't advance question index; InterviewSession will re-prompt and re-listen.
+        return {
+          ok: true,
+          evaluation,
+          isComplete: false,
+          needsRetry: true,
+          retryPrompt: String(evaluation?.followUpQuestion || "").trim() || fallbackPrompt,
+          retryCount: RETRY_STATE_REF.current.count,
+        };
+      }
+
+      // Reset retry state after a satisfactory answer
+      RETRY_STATE_REF.current = { questionId: null, count: 0 };
 
       const answerEntry = {
         id: `${currentQuestion?.id || "unknown"}_answer`,
@@ -208,6 +294,19 @@ export function useInterviewEngine(config) {
 
   async function generateReport(conversation) {
     try {
+      const { answeredMain, totalMain, ratio } = getMainCompletionStats(conversation);
+      if (ratio < 0.5) {
+        const incomplete = {
+          incomplete: true,
+          counting: "main",
+          answeredCount: answeredMain,
+          total: totalMain,
+          requiredRatio: 0.5,
+        };
+        setReport(incomplete);
+        return incomplete;
+      }
+
       const finalReport = await generateFinalReport(conversation, config);
       setReport(finalReport);
       return finalReport;

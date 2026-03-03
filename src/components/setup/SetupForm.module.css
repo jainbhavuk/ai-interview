@@ -1,14 +1,26 @@
 .card {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border: 1px solid #334155;
+  background:
+    radial-gradient(900px 520px at 15% 10%, rgba(183, 255, 242, 0.14), transparent 60%),
+    radial-gradient(700px 520px at 80% 0%, rgba(124, 246, 255, 0.07), transparent 64%),
+    linear-gradient(180deg, var(--bg-elev-1) 0%, var(--bg) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.20);
   border-radius: 20px;
-  padding: 32px;
+  padding: 28px;
   max-width: 520px;
   margin: 0 auto;
   box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    0 40px 120px rgba(0, 0, 0, 0.65),
+    0 18px 40px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.03);
   width: 100%;
+  backdrop-filter: blur(10px);
+}
+
+/* Mobile/coarse-pointer browsers can render text "soft" with backdrop-filter. */
+@media (max-width: 720px), (pointer: coarse) {
+  .card {
+    backdrop-filter: none;
+  }
 }
 
 .form {
@@ -29,7 +41,7 @@
 
 .row label {
   font-size: 0.9rem;
-  color: #e2e8f0;
+  color: var(--text);
   font-weight: 500;
   letter-spacing: 0.025em;
   text-align: left;
@@ -38,13 +50,13 @@
 .row input,
 .row select,
 .row textarea {
-  background: #020617;
-  border: 1px solid #334155;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 12px;
   padding: 14px 16px;
   font-size: 0.95rem;
-  color: #f1f5f9;
-  transition: all 0.2s ease;
+  color: var(--text);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   font-family: inherit;
   resize: vertical;
   width: 100%;
@@ -53,6 +65,7 @@
 
 .row select {
   appearance: none;
+  color-scheme: dark;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 12px center;
   background-repeat: no-repeat;
@@ -60,24 +73,33 @@
   padding-right: 40px;
 }
 
+.row select option {
+  background-color: var(--bg-elev-1);
+  color: var(--text);
+}
+
+.row select option:disabled {
+  color: var(--muted-2);
+}
+
 .row input:focus,
 .row select:focus,
 .row textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: rgba(126, 230, 207, 0.75);
+  box-shadow: 0 0 0 3px rgba(59, 191, 167, 0.12);
 }
 
 .row input::placeholder {
-  color: #64748b;
+  color: var(--muted-2);
 }
 
 .fileWrapper {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #020617;
-  border: 1px solid #334155;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 12px;
   padding: 12px 16px;
   min-height: 44px;
@@ -92,12 +114,12 @@
 }
 
 .fileButton {
-  background: #1e293b;
-  border: 1px solid #475569;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.26);
   border-radius: 8px;
   padding: 8px 16px;
   font-size: 0.85rem;
-  color: #e2e8f0;
+  color: var(--text);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
@@ -109,12 +131,12 @@
 }
 
 .fileButton:hover {
-  background: #334155;
-  border-color: #64748b;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(148, 163, 184, 0.34);
 }
 
 .fileName {
-  color: #94a3b8;
+  color: var(--muted);
   font-size: 0.9rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -126,12 +148,35 @@
 .filePreview {
   margin-top: 8px;
   padding: 12px 16px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(59, 191, 167, 0.10);
+  border: 1px solid rgba(59, 191, 167, 0.26);
   border-radius: 8px;
-  color: #22c55e;
+  color: #a7f3e2;
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.filePreviewUploading {
+  margin-top: 8px;
+  padding: 12px 16px;
+  background: rgba(45, 212, 191, 0.10);
+  border: 1px solid rgba(45, 212, 191, 0.26);
+  border-radius: 8px;
+  color: #99f6e4;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.requiredStar {
+  color: #ef4444;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.helperText {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .error {
@@ -147,7 +192,7 @@
 .primaryButton {
   width: 100%;
   border: none;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
   color: #ffffff;
   border-radius: 12px;
   padding: 16px 24px;
@@ -162,9 +207,16 @@
 }
 
 .primaryButton:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--accent-strong) 0%, #047857 100%);
   transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.22);
+}
+
+.primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
 }
 
 .primaryButton:active {

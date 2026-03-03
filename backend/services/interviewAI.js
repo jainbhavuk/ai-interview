@@ -31,7 +31,7 @@ const BEHAVIORAL_QUESTIONS = [
   "Give an example of how you handle ambiguity.",
   "Tell me about a time you had to collaborate across teams.",
   "Describe a situation where you had to be creative.",
-  "Give an example of how you handle mistakes.",
+  "Tell me about a specific mistake you made in a project. What was the impact, how did you detect it, what did you do to fix it, and what guardrail did you add so it wouldn’t happen again?",
   "Tell me about a time you had to motivate others.",
   "Describe a situation where you had to negotiate.",
   "Give an example of how you handle multiple deadlines.",
@@ -50,7 +50,7 @@ const BEHAVIORAL_QUESTIONS = [
   "Tell me about a time you had to work with incomplete information.",
   "Give an example of how you handle ethical dilemmas.",
   "Tell me about a time you had to rebuild trust.",
-  "Describe a situation where you had to say no.",
+  "Tell me about a time you had to say no (or push back) to a request from a stakeholder or teammate. What were the constraints, how did you communicate it, what alternative did you propose, and what was the outcome?",
   "Give an example of how you handle virtual collaboration.",
   "Tell me about a time you had to pivot quickly.",
   "Describe a situation where you had to manage expectations.",
@@ -66,6 +66,68 @@ const INTRODUCTION_TEMPLATES = [
   "Hi there [Name]! Thanks for taking the time to interview with me. Your resume shows some really impressive work. Before we get into the technical details, I'd love to hear about your journey and what motivates you in your career."
 ];
 
+const BEHAVIORAL_STAR_TEMPLATES = [
+  "Use a real example. What happened, what did you do, and what was the result?",
+  "Pick one example. What was the situation, what did you do, and what happened in the end?",
+  "Keep it specific. What did you do, why, and what was the outcome?",
+];
+
+function elaborateBehavioralQuestion(question) {
+  const q = String(question || "").trim();
+  if (!q) return "";
+  const suffix = BEHAVIORAL_STAR_TEMPLATES[Math.floor(Math.random() * BEHAVIORAL_STAR_TEMPLATES.length)];
+
+  // Avoid doubling up if the question is already very detailed.
+  const alreadyDetailed =
+    /\b(impact|outcome|result|guardrail|constraints|alternative|detect)\b/i.test(q) ||
+    q.length > 140;
+  if (alreadyDetailed) return q;
+
+  const endsWithPunct = /[?.!]$/.test(q);
+  return `${q}${endsWithPunct ? "" : "."} ${suffix}`;
+}
+
+function normalizePrompt(prompt) {
+  return String(prompt || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function isIntroLikePrompt(prompt) {
+  const p = normalizePrompt(prompt);
+  return Boolean(
+    p &&
+      (p.includes("tell me about yourself") ||
+        p.includes("introduce yourself") ||
+        p.includes("professional journey") ||
+        p.includes("your journey") ||
+        p.includes("your background") ||
+        p.includes("walk me through your resume") ||
+        p.includes("walk me through your cv") ||
+        p.includes("self introduction") ||
+        p === "tell me about your experience"),
+  );
+}
+
+function sanitizeFlatQuestions(questions) {
+  const list = Array.isArray(questions) ? questions : [];
+  const seen = new Set();
+  const out = [];
+
+  for (const q of list) {
+    const prompt = String(q?.prompt || "").trim();
+    if (!prompt) continue;
+    if (isIntroLikePrompt(prompt)) continue;
+    const key = normalizePrompt(prompt);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ ...q, prompt });
+  }
+
+  return out;
+}
+
 async function generateInterviewStructure(config) {
   const system = new SystemMessage(
     `JSON only. You must respond with valid JSON containing exactly two keys: "introduction" and "questions". 
@@ -79,6 +141,11 @@ async function generateInterviewStructure(config) {
     - Use variations like: "As you mentioned in your resume...", "I noticed on your CV...", "Based on your experience with...", "You mentioned working with..."
     - For follow-ups: "How did you improve that?", "What was the outcome?", "Did you face any challenges with that?"
     
+    ALSO IMPORTANT: Incorporate the job description:
+    - Reference specific responsibilities/requirements from the JD, not only the resume
+    - Include at least a few questions that directly test JD-required skills/experience
+    - If resume and JD conflict, prioritize the JD and ask about gaps explicitly
+
     Use the provided introduction template exactly as given, just replace [Name] with the candidate name.`,
   );
 
@@ -112,7 +179,9 @@ async function generateInterviewStructure(config) {
   const shuffledBehavioral = [...BEHAVIORAL_QUESTIONS].sort(
     () => Math.random() - 0.5,
   );
-  const selectedBehavioral = shuffledBehavioral.slice(0, behavioralCount);
+  const selectedBehavioral = shuffledBehavioral
+    .slice(0, behavioralCount)
+    .map(elaborateBehavioralQuestion);
   
   const randomIntro = INTRODUCTION_TEMPLATES[Math.floor(Math.random() * INTRODUCTION_TEMPLATES.length)];
   const personalizedIntro = randomIntro.replace(/\[Name\]/g, candidateName);
@@ -177,7 +246,10 @@ ${selectedBehavioral.map((q, i) => `${i + 1}. ${q}`).join('\n')}`,
 
     return {
       introduction: parsed?.introduction,
-      questions: [...flatQuestions, ...behavioralQuestions],
+      questions: [
+        ...sanitizeFlatQuestions(flatQuestions),
+        ...sanitizeFlatQuestions(behavioralQuestions),
+      ],
     };
   } catch (error) {
     console.error("Structure generation error:", error);
@@ -391,25 +463,36 @@ or {"intent":"thinking","response":"No pressure - take your time.","extraTime":1
 
 async function generateFinalReport(transcript, config) {
   const calculateFallbackScore = (transcript) => {
-    if (!transcript || transcript.length === 0) return 2.5;
+    if (!transcript || transcript.length === 0) return 1;
     
     const scores = transcript
       .map(t => t?.evaluation?.score)
       .filter(s => s && typeof s === 'number');
     
-    if (scores.length === 0) return 2.5;
+    if (scores.length === 0) return 2;
     
     return scores.reduce((sum, score) => sum + score, 0) / scores.length;
   };
 
+  // Deterministic guard: if user didn't answer anything, don't ask the LLM to "guess" a high score.
+  if (!transcript || transcript.length === 0) {
+    return {
+      overallScore: 1,
+      strengths: [],
+      improvements: ["Provide fuller, more specific answers to each question."],
+      competencyScores: {},
+    };
+  }
+
+  const computedOverallScore = calculateFallbackScore(transcript);
+
   const system = new SystemMessage(
     `JSON only. Generate interview evaluation report based on actual performance.
 
-Calculate overallScore by averaging all individual question scores from the transcript.
-If no scores are available in transcript, analyze answer quality and assign appropriate score.
+Do NOT guess high scores. Use the transcript content only.
+You may omit overallScore; it is computed separately from transcript scores.
 
 Return JSON with:
-- overallScore (1-5, calculated from actual performance)
 - strengths (array of specific strengths demonstrated)
 - improvements (array of specific areas to improve)`,
   );
@@ -438,8 +521,7 @@ Generate performance-based evaluation.`,
     const parsed = JSON.parse(clean);
 
     return {
-      overallScore:
-        parsed?.overallScore ?? parsed?.interviewEvaluation?.overallScore ?? calculateFallbackScore(transcript),
+      overallScore: computedOverallScore,
       strengths: parsed?.strengths?.length
         ? parsed?.strengths
         : ["Completed the interview"],
@@ -450,9 +532,8 @@ Generate performance-based evaluation.`,
     };
   } catch (error) {
     console.error("Report generation error:", error);
-    const fallbackScore = calculateFallbackScore(transcript);
     return {
-      overallScore: fallbackScore,
+      overallScore: computedOverallScore,
       strengths: ["Completed interview"],
       improvements: ["Continue practicing"],
       competencyScores: {},

@@ -10,8 +10,41 @@
     sans-serif;
   line-height: 1.4;
   font-weight: 400;
-  color: #e5e7eb;
-  background: #0f172a;
+  color-scheme: dark;
+
+  /* Calm graphite + subtle sage accent (used across CSS modules) */
+  --bg: #0b0f14;
+  --bg-elev-1: #0f1620;
+  --bg-elev-2: #121c27;
+  --panel: #0f1821;
+  --panel-2: #12202b;
+  --border: rgba(148, 163, 184, 0.16);
+  --text: #e8edf2;
+  --muted: #a7b2bf;
+  --muted-2: #7f8b99;
+
+  /* Keep accents restrained; avoid neon green */
+  /* Punchier teal (more energy, still not "emerald") */
+  --accent: #34e3c1;
+  --accent-strong: #17c4a5;
+  --accent-2: #b7fff2;
+  --accent-soft: rgba(52, 227, 193, 0.18);
+  --accent-2-soft: rgba(183, 255, 242, 0.16);
+
+  /* Ambient helpers */
+  --ambient-1: rgba(183, 255, 242, 0.16);
+  --ambient-2: rgba(52, 227, 193, 0.14);
+
+  /* Extra pop for gradients/glows (used sparingly) */
+  --accent-pop: #7cf6ff;
+  --accent-pop-soft: rgba(124, 246, 255, 0.10);
+
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --focus: #7ee6cf;
+
+  color: var(--text);
+  background: var(--bg);
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -48,7 +81,7 @@ select {
 }
 
 :focus-visible {
-  outline: 3px solid #2563eb;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
