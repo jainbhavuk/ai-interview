@@ -145,9 +145,6 @@ export function useSpeechSynthesis() {
 
     window?.speechSynthesis?.cancel();
     setIsSpeaking(false);
-    IS_PROCESSING_REF.current = false;
-    utteranceRef.current = null;
-    ON_END_CALLBACK_REF.current = null;
   }
 
   function speak(text, options = {}) {
