@@ -18,10 +18,20 @@ export function SetupForm({ onStartInterview }) {
   const [resumeText, setResumeText] = useState("");
   const [resumeFileName, setResumeFileName] = useState("");
   const [isResumeUploading, setIsResumeUploading] = useState(false);
+  const [isRequestingPermissions, setIsRequestingPermissions] = useState(false);
   const [jdText, setJdText] = useState("");
   const [domain, setDomain] = useState("Frontend");
   const [yoe, setYoe] = useState("1 year");
   const [error, setError] = useState("");
+
+  async function getPermissionState(name) {
+    try {
+      const status = await navigator?.permissions?.query?.({ name });
+      return status?.state || "unknown";
+    } catch {
+      return "unknown";
+    }
+  }
 
   async function handleFileUpload(event, target) {
     const file = event.target.files?.[0];
@@ -50,7 +60,7 @@ export function SetupForm({ onStartInterview }) {
     }
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (!candidateName.trim()) {
@@ -63,19 +73,66 @@ export function SetupForm({ onStartInterview }) {
       return;
     }
 
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setError("Microphone permissions are required. This browser is not supported.");
+      return;
+    }
+
     setError("");
-    onStartInterview({
-      candidateName: candidateName.trim(),
-      durationMinutes: Number(durationMinutes),
-      resumeText,
-      jdText,
-      domain,
-      yoe,
-    });
+    setIsRequestingPermissions(true);
+
+    try {
+      const micState = await getPermissionState("microphone");
+      if (micState === "denied") {
+        setError(
+          "Microphone permission is blocked for this site. Please enable it in your browser site settings (lock icon in the address bar) and reload.",
+        );
+        return;
+      }
+
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStream?.getTracks?.().forEach((t) => t?.stop?.());
+
+      let nextCameraAllowed = false;
+      try {
+        const camStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user" },
+          audio: false,
+        });
+        camStream?.getTracks?.().forEach((t) => t?.stop?.());
+        nextCameraAllowed = true;
+      } catch {
+        nextCameraAllowed = false;
+      }
+
+      onStartInterview({
+        candidateName: candidateName.trim(),
+        durationMinutes: Number(durationMinutes),
+        resumeText,
+        jdText,
+        domain,
+        yoe,
+        cameraAllowed: nextCameraAllowed,
+      });
+    } catch {
+      const micState = await getPermissionState("microphone");
+      if (micState === "denied") {
+        setError(
+          "Microphone permission is blocked for this site. Please enable it in your browser site settings (lock icon in the address bar) and reload.",
+        );
+      } else {
+        setError("Microphone permission is required to start the interview.");
+      }
+    } finally {
+      setIsRequestingPermissions(false);
+    }
   }
 
   const canStartInterview =
-    !!candidateName.trim() && !!resumeText.trim() && !isResumeUploading;
+    !!candidateName.trim() &&
+    !!resumeText.trim() &&
+    !isResumeUploading &&
+    !isRequestingPermissions;
 
   return (
     <section className={styles.card}>
@@ -181,11 +238,6 @@ export function SetupForm({ onStartInterview }) {
               Uploading resume{resumeFileName ? `: ${resumeFileName}` : ""}...
             </div>
           )}
-          {!isResumeUploading && resumeText && (
-            <div className={styles.filePreview} aria-live="polite">
-              Resume uploaded ✓{resumeFileName ? ` (${resumeFileName})` : ""}
-            </div>
-          )}
         </div>
 
         {error && <div className={styles.error}>{error}</div>}
@@ -196,7 +248,11 @@ export function SetupForm({ onStartInterview }) {
           disabled={!canStartInterview}
           title={!resumeText.trim() ? "Resume is required to start." : ""}
         >
-          {isResumeUploading ? "Uploading Resume..." : "Start Interview"}
+          {isResumeUploading
+            ? "Uploading Resume..."
+            : isRequestingPermissions
+              ? "Requesting permissions..."
+              : "Start Interview"}
         </button>
       </form>
     </section>

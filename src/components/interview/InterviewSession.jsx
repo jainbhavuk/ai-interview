@@ -3,6 +3,7 @@ import { useInterviewEngine } from "../../hooks/useInterviewEngine";
 import { useSpeechRecognition } from "../../hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "../../hooks/useSpeechSynthesis";
 import { handleUserResponse } from "../../services/ai/interviewAI";
+import { CameraPreview } from "../camera/CameraPreview";
 import styles from "./InterviewSession.module.css";
 
 export function InterviewSession({ config, onComplete, onAbort }) {
@@ -17,6 +18,9 @@ export function InterviewSession({ config, onComplete, onAbort }) {
   const [isUserThinking, setIsUserThinking] = useState(false);
   const [thinkingStartTime, setThinkingStartTime] = useState(null);
   const [aiSubtitle, setAiSubtitle] = useState("");
+  const [isCameraVisible, setIsCameraVisible] = useState(
+    Boolean(config?.cameraAllowed),
+  );
 
   const turnTimerRef = useRef(null);
   const responseTimeoutRef = useRef(null);
@@ -892,6 +896,9 @@ function speakLine(line, onEndAction = "listen") {
       </aside>
 
       <p className={styles.srOnly}>{interview?.currentQuestion?.prompt}</p>
+      {isCameraVisible && (
+        <CameraPreview onClose={() => setIsCameraVisible(false)} />
+      )}
     </section>
   );
 }
